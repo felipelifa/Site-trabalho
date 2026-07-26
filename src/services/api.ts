@@ -99,18 +99,21 @@ export const salaryRulesService = {
     if (existing && existing.length > 0) return false
 
     const defaults: Tables['salary_rules']['Insert'][] = [
-      { user_id: userId, name: 'Semana Lisboa/Algarve', type: 'base', amount: 140, condition_type: 'week_city', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 10 },
+      { user_id: userId, name: 'Semana Lisboa', type: 'base', amount: 140, condition_type: 'week_city', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 10 },
+      { user_id: userId, name: 'Semana Algarve', type: 'base', amount: 140, condition_type: 'week_city', condition_value: 'Algarve', city: 'Algarve', is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 10 },
       { user_id: userId, name: 'Semana Porto', type: 'base', amount: 50, condition_type: 'week_city', condition_value: 'Porto', city: 'Porto', is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 10 },
-      { user_id: userId, name: 'Sábado Lisboa/Algarve', type: 'overtime', amount: 110, condition_type: 'saturday', condition_value: 'Lisboa', city: 'Lisboa', day_of_week: 6, is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 20 },
+      { user_id: userId, name: 'Sábado Lisboa', type: 'overtime', amount: 110, condition_type: 'saturday', condition_value: 'Lisboa', city: 'Lisboa', day_of_week: 6, is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 20 },
+      { user_id: userId, name: 'Sábado Algarve', type: 'overtime', amount: 110, condition_type: 'saturday', condition_value: 'Algarve', city: 'Algarve', day_of_week: 6, is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 20 },
       { user_id: userId, name: 'Sábado Porto', type: 'overtime', amount: 80, condition_type: 'saturday', condition_value: 'Porto', city: 'Porto', day_of_week: 6, is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 20 },
-      { user_id: userId, name: 'Feriado', type: 'bonus', amount: 80, condition_type: 'holiday', is_holiday: true, is_vacation: false, is_absence: false, active: true, priority: 30 },
-      { user_id: userId, name: 'Férias', type: 'bonus', amount: 80, condition_type: 'vacation', is_holiday: false, is_vacation: true, is_absence: false, active: true, priority: 30 },
+      { user_id: userId, name: 'Feriado Lisboa', type: 'bonus', amount: 110, condition_type: 'holiday', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: true, is_vacation: false, is_absence: false, active: true, priority: 30 },
+      { user_id: userId, name: 'Feriado Algarve', type: 'bonus', amount: 110, condition_type: 'holiday', condition_value: 'Algarve', city: 'Algarve', is_holiday: true, is_vacation: false, is_absence: false, active: true, priority: 30 },
+      { user_id: userId, name: 'Feriado Porto', type: 'bonus', amount: 80, condition_type: 'holiday', condition_value: 'Porto', city: 'Porto', is_holiday: true, is_vacation: false, is_absence: false, active: true, priority: 30 },
+      { user_id: userId, name: 'Férias Lisboa', type: 'bonus', amount: 110, condition_type: 'vacation', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: false, is_vacation: true, is_absence: false, active: true, priority: 30 },
+      { user_id: userId, name: 'Férias Algarve', type: 'bonus', amount: 110, condition_type: 'vacation', condition_value: 'Algarve', city: 'Algarve', is_holiday: false, is_vacation: true, is_absence: false, active: true, priority: 30 },
+      { user_id: userId, name: 'Férias Porto', type: 'bonus', amount: 80, condition_type: 'vacation', condition_value: 'Porto', city: 'Porto', is_holiday: false, is_vacation: true, is_absence: false, active: true, priority: 30 },
       { user_id: userId, name: 'Falta normal', type: 'deduction', amount: -80, condition_type: 'absence', condition_value: 'normal', is_holiday: false, is_vacation: false, is_absence: true, active: true, priority: 40 },
       { user_id: userId, name: 'Falta segunda', type: 'deduction', amount: -240, condition_type: 'absence', condition_value: 'monday', day_of_week: 1, is_holiday: false, is_vacation: false, is_absence: true, active: true, priority: 50 },
       { user_id: userId, name: 'Falta sexta', type: 'deduction', amount: -240, condition_type: 'absence', condition_value: 'friday', day_of_week: 5, is_holiday: false, is_vacation: false, is_absence: true, active: true, priority: 50 },
-      { user_id: userId, name: 'Adicional Diário Porto', type: 'bonus', amount: 10, condition_type: 'city_bonus', condition_value: 'Porto', city: 'Porto', is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 15 },
-      { user_id: userId, name: 'Adicional Diário Lisboa/Algarve', type: 'bonus', amount: 30, condition_type: 'city_bonus', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 15 },
-      { user_id: userId, name: 'Adicional Sexta-feira Lisboa/Algarve', type: 'bonus', amount: 20, condition_type: 'friday_bonus', condition_value: 'Lisboa', city: 'Lisboa', day_of_week: 5, is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 25 },
     ]
 
     const { error } = await supabase.from('salary_rules').insert(defaults)
@@ -160,6 +163,19 @@ export const salaryRulesService = {
     if (missing.length > 0) {
       await supabase.from('salary_rules').insert(missing)
     }
+
+    const obsoleteNames = [
+      'Semana Lisboa/Algarve', 'Sábado Lisboa/Algarve',
+      'Feriado', 'Férias',
+      'Adicional Diário Porto', 'Adicional Diário Lisboa/Algarve',
+      'Adicional Sexta-feira Lisboa/Algarve',
+    ]
+    await supabase
+      .from('salary_rules')
+      .update({ active: false })
+      .eq('user_id', userId)
+      .in('name', obsoleteNames)
+      .eq('active', true)
   },
 }
 

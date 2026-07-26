@@ -390,10 +390,11 @@ export function useEnsureCompetency() {
       await salaryRulesService.ensureAllRules(user!.id)
       await competenciesService.ensureCurrentCompetency(user!.id)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['competencies'] })
-      queryClient.invalidateQueries({ queryKey: ['competency'] })
-      queryClient.invalidateQueries({ queryKey: ['salary-rules'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['competencies'] })
+      await queryClient.invalidateQueries({ queryKey: ['competency'] })
+      await queryClient.invalidateQueries({ queryKey: ['salary-rules'] })
+      await queryClient.refetchQueries({ queryKey: ['salary-rules'] })
     },
   })
 }
