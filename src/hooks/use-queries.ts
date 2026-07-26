@@ -189,20 +189,23 @@ export function useCreateWorkWeek() {
     mutationFn: (week: Record<string, unknown>) =>
       workWeeksService.create({ ...week, user_id: user!.id } as never),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['work-weeks', user?.id] })
+      queryClient.invalidateQueries({ queryKey: ['work-weeks'] })
+      queryClient.invalidateQueries({ queryKey: ['work-days-month'] })
+      queryClient.invalidateQueries({ queryKey: ['work-days-year'] })
     },
   })
 }
 
 export function useUpdateWorkWeek() {
   const queryClient = useQueryClient()
-  const { user } = useAuthContext()
 
   return useMutation({
     mutationFn: ({ id, ...week }: { id: string } & Record<string, unknown>) =>
       workWeeksService.update(id, week),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['work-weeks', user?.id] })
+      queryClient.invalidateQueries({ queryKey: ['work-weeks'] })
+      queryClient.invalidateQueries({ queryKey: ['work-days-month'] })
+      queryClient.invalidateQueries({ queryKey: ['work-days-year'] })
     },
   })
 }
@@ -216,6 +219,8 @@ export function useUpsertWorkDay() {
       workDaysService.upsert({ ...day, user_id: user!.id } as never),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['work-days'] })
+      queryClient.invalidateQueries({ queryKey: ['work-days-month'] })
+      queryClient.invalidateQueries({ queryKey: ['work-days-year'] })
       queryClient.invalidateQueries({ queryKey: ['work-weeks'] })
       queryClient.invalidateQueries({ queryKey: ['work-week'] })
     },
@@ -230,6 +235,8 @@ export function useUpdateWorkDay() {
       workDaysService.update(id, day),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['work-days'] })
+      queryClient.invalidateQueries({ queryKey: ['work-days-month'] })
+      queryClient.invalidateQueries({ queryKey: ['work-days-year'] })
     },
   })
 }
