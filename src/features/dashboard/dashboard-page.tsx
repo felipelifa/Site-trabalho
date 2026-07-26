@@ -29,7 +29,7 @@ import {
   useUpsertWorkDay,
   useEnsureCompetency,
 } from '@/hooks/use-queries'
-import { calculateWeekEarnings } from '@/utils/rules-engine'
+import { calculateMonthEarnings } from '@/utils/rules-engine'
 
 function formatEuro(value: number): string {
   return `€${value.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -81,7 +81,7 @@ export function DashboardPage() {
 
   const monthEarnings = useMemo(() => {
     if (!monthWorkDays.length) return { total: 0, breakdown: [] }
-    return calculateWeekEarnings(monthWorkDays, rules, settings ?? undefined)
+    return calculateMonthEarnings(monthWorkDays, rules, settings ?? undefined)
   }, [monthWorkDays, rules, settings])
 
   const daysWorked = workDays.filter(d => d.worked).length

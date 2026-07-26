@@ -358,5 +358,91 @@ export function calculateMonthEarnings(
   rules: SalaryRule[],
   settings?: Settings
 ): CalculationResult {
-  return calculateWeekEarnings(workDays, rules, settings)
+  let total = 0
+  const breakdown: CalculationResult['breakdown'] = []
+
+  if (settings) {
+    const base = settings.base_salary ?? 0
+    const meal = settings.meal_allowance ?? 0
+    const duodecimos = (settings.thirteenth_month ? 75 : 0) + (settings.fourteenth_month ? 75 : 0)
+
+    if (base > 0) {
+      breakdown.push({ rule_id: 'base', rule_name: 'Salário Base', amount: base, applied: true, reason: 'Salário Base mensal' })
+      total += base
+    }
+    if (meal > 0) {
+      breakdown.push({ rule_id: 'meal', rule_name: 'Subsídio Alimentação', amount: meal, applied: true, reason: 'Subsídio Alimentação mensal' })
+      total += meal
+    }
+    if (duodecimos > 0) {
+      breakdown.push({ rule_id: 'duodecimos', rule_name: 'Duodécimos', amount: duodecimos, applied: true, reason: 'Duodécimos (Natal + Férias)' })
+      total += duodecimos
+    }
+  }
+
+  const workedDays = workDays.filter(d => d.worked).length
+  const hourlyPay = workedDays * DAILY_HOURS * HOURLY_RATE
+  if (workedDays > 0) {
+    breakdown.push({
+      rule_id: 'hourly',
+      rule_name: 'Trabalho Horário',
+      amount: hourlyPay,
+      applied: true,
+      reason: `${workedDays} dias × ${DAILY_HOURS}h × €${HOURLY_RATE}`,
+    })
+    total += hourlyPay
+  }
+
+  const mealVoucher = workedDays * MEAL_VOUCHER
+  if (workedDays > 0) {
+    breakdown.push({
+      rule_id: 'meal_voucher',
+      rule_name: 'Vale Alimentação',
+      amount: mealVoucher,
+      applied: true,
+      reason: `${workedDays} dias × €${MEAL_VOUCHER}`,
+    })
+    total += mealVoucher
+  }
+
+  const weekRules = rules.filter(r => r.active && r.condition_type === 'week_city')
+
+  const weekIds = new Set(workDays.map(d => d.week_id).filter(Boolean))
+  for (const weekId of weekIds) {
+    const weekDays = workDays.filter(d => d.week_id === weekId)
+    const weekDestinos = new Set(weekDays.filter(d => d.worked && d.destination).map(d => d.destination))
+    for (const rule of weekRules) {
+      if (weekDestinos.has(rule.condition_value)) {
+        total += rule.amount
+        breakdown.push({
+          rule_id: rule.id,
+          rule_name: rule.name,
+          amount: rule.amount,
+          applied: true,
+          reason: `${rule.name} - semana`,
+        })
+      }
+    }
+  }
+
+  for (const workDay of workDays) {
+    const date = new Date(workDay.date)
+    const dayCalc = calculateDayEarnings(workDay, rules, date)
+    total += dayCalc.total
+
+    for (const ruleId of dayCalc.applied_rules) {
+      const rule = rules.find(r => r.id === ruleId)
+      if (rule) {
+        breakdown.push({
+          rule_id: rule.id,
+          rule_name: rule.name,
+          amount: rule.amount,
+          applied: true,
+          reason: `${rule.name} - ${workDay.date}`,
+        })
+      }
+    }
+  }
+
+  return { total, breakdown }
 }
