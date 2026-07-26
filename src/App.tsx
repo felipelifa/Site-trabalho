@@ -9,7 +9,6 @@ const LoginPage = lazy(() => import('@/features/auth/login-page').then(m => ({ d
 const RegisterPage = lazy(() => import('@/features/auth/register-page').then(m => ({ default: m.RegisterPage })))
 const DashboardPage = lazy(() => import('@/features/dashboard/dashboard-page').then(m => ({ default: m.DashboardPage })))
 const CalendarPage = lazy(() => import('@/features/calendar/calendar-page').then(m => ({ default: m.CalendarPage })))
-const WeeklyRegistrationPage = lazy(() => import('@/features/weeks/weekly-registration-page').then(m => ({ default: m.WeeklyRegistrationPage })))
 const StatisticsPage = lazy(() => import('@/features/statistics/statistics-page').then(m => ({ default: m.StatisticsPage })))
 const NotesPage = lazy(() => import('@/features/notes/notes-page').then(m => ({ default: m.NotesPage })))
 const ChecklistsPage = lazy(() => import('@/features/checklists/checklists-page').then(m => ({ default: m.ChecklistsPage })))
@@ -95,7 +94,6 @@ function AppRoutes() {
         >
           <Route index element={<DashboardPage />} />
           <Route path="calendar" element={<CalendarPage />} />
-          <Route path="weeks" element={<WeeklyRegistrationPage />} />
           <Route path="statistics" element={<StatisticsPage />} />
           <Route path="notes" element={<NotesPage />} />
           <Route path="checklists" element={<ChecklistsPage />} />
