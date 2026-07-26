@@ -20,7 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useWorkDaysByMonth, useWorkWeeks, useSettings, useSalaryRules } from '@/hooks/use-queries'
 import { useCreateWorkWeek, useUpsertWorkDay } from '@/hooks/use-queries'
 import { isNationalHoliday, isFafeMunicipalHoliday, getHolidayName } from '@/utils/holidays'
-import { calculateDayEarnings } from '@/utils/rules-engine'
+import { calculateDayEarnings, calculateMonthEarnings } from '@/utils/rules-engine'
 
 type FilterType = 'all' | 'worked' | 'saturday' | 'holiday' | 'absence' | 'vacation' | 'porto' | 'lisboa' | 'algarve' | 'pending'
 
@@ -101,6 +101,10 @@ export function CalendarPage() {
   const { data: workDays = [] } = useWorkDaysByMonth(
     currentDate.getFullYear(),
     currentDate.getMonth() + 1
+  )
+  const { data: prevWorkDays = [] } = useWorkDaysByMonth(
+    prevMonth.getFullYear(),
+    prevMonth.getMonth() + 1
   )
   const { data: allWeeks = [] } = useWorkWeeks()
   const { data: settings } = useSettings()
@@ -365,7 +369,6 @@ export function CalendarPage() {
 
   const monthStats = useMemo(() => {
     let worked = 0, satWorked = 0, holidays = 0, absences = 0, vacations = 0, pending = 0
-    let totalEarned = 0
     const cities: Record<string, number> = { Porto: 0, Lisboa: 0, Algarve: 0 }
 
     days.forEach(date => {
@@ -376,34 +379,57 @@ export function CalendarPage() {
       if (info.status === 'absence') absences++
       if (info.status === 'vacation') vacations++
       if (info.status === 'pending') pending++
-      totalEarned += info.earned
       if (info.destination && info.destination in cities) {
         cities[info.destination]++
       }
     })
 
-    const prevDays = eachDayOfInterval({ start: startOfMonth(prevMonth), end: endOfMonth(prevMonth) })
-    const prevTotal = prevDays.reduce((sum, date) => {
-      const dateStr = format(date, 'yyyy-MM-dd')
-      const existing = workDaysMap.get(dateStr)
-      if (!existing) return sum
-      const calc = calculateDayEarnings(
-        {
-          id: existing.id || '', user_id: '', week_id: '', date: existing.date,
-          day_of_week: existing.day_of_week, worked: existing.worked,
-          destination: existing.destination || '', slept_away: existing.slept_away ?? false,
-          is_holiday: existing.is_holiday, is_vacation: existing.is_vacation,
-          is_absence: existing.is_absence, absence_type: existing.absence_type || '',
-          earned: 0, notes: existing.notes || '', created_at: '', updated_at: '',
-        } as never,
-        [],
-        date
-      )
-      return sum + calc.total
-    }, 0)
+    const monthWorkDays = workDays.map(d => ({
+      id: d.id || '',
+      user_id: d.user_id || '',
+      week_id: d.week_id || '',
+      date: d.date,
+      day_of_week: d.day_of_week,
+      worked: d.worked,
+      destination: d.destination || '',
+      slept_away: d.slept_away ?? false,
+      is_holiday: d.is_holiday,
+      is_vacation: d.is_vacation,
+      is_absence: d.is_absence,
+      absence_type: d.absence_type || '',
+      earned: 0,
+      notes: d.notes || '',
+      created_at: '',
+      updated_at: '',
+    })) as never[]
+
+    const monthCalc = calculateMonthEarnings(monthWorkDays, rules)
+    const totalEarned = monthCalc.total
+
+    const prevMonthWorkDays = prevWorkDays.map(d => ({
+      id: d.id || '',
+      user_id: d.user_id || '',
+      week_id: d.week_id || '',
+      date: d.date,
+      day_of_week: d.day_of_week,
+      worked: d.worked,
+      destination: d.destination || '',
+      slept_away: d.slept_away ?? false,
+      is_holiday: d.is_holiday,
+      is_vacation: d.is_vacation,
+      is_absence: d.is_absence,
+      absence_type: d.absence_type || '',
+      earned: 0,
+      notes: d.notes || '',
+      created_at: '',
+      updated_at: '',
+    })) as never[]
+
+    const prevCalc = calculateMonthEarnings(prevMonthWorkDays, rules)
+    const prevTotal = prevCalc.total
 
     return { worked, satWorked, holidays, absences, vacations, pending, totalEarned, prevTotal, cities }
-  }, [days, workDays, prevMonth, workDaysMap])
+  }, [days, workDays, prevWorkDays, rules])
 
   const weekGroups = useMemo(() => {
     const groups: { weekStart: Date; weekEnd: Date; days: Date[]; total: number; destination: string | null }[] = []
@@ -506,9 +532,11 @@ export function CalendarPage() {
             <Button variant="outline" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setCurrentDate(new Date())}>
-              Hoje
-            </Button>
+            {!isToday(startOfMonth(currentDate)) && (
+              <Button variant="ghost" size="sm" onClick={() => setCurrentDate(new Date())}>
+                Voltar ao Hoje
+              </Button>
+            )}
             <Button variant="outline" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
               <ChevronRight className="w-4 h-4" />
             </Button>
