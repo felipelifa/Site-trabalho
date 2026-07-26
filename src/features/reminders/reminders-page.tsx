@@ -90,12 +90,12 @@ export function RemindersPage() {
       animate="show"
       className="space-y-6"
     >
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Lembretes</h1>
-          <p className="text-muted-foreground">Gerencie seus lembretes</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Lembretes</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Gerencie seus lembretes</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
+        <Button onClick={() => setShowForm(!showForm)} className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           Novo Lembrete
         </Button>
@@ -121,7 +121,7 @@ export function RemindersPage() {
                 value={description}
                 onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm text-muted-foreground">Data</label>
                   <Input

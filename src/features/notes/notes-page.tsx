@@ -76,8 +76,8 @@ export function NotesPage() {
       className="space-y-6"
     >
       <motion.div variants={item}>
-        <h1 className="text-3xl font-bold text-foreground">Notas</h1>
-        <p className="text-muted-foreground">Registre observações do dia</p>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Notas</h1>
+        <p className="text-sm md:text-base text-muted-foreground">Registre observações do dia</p>
       </motion.div>
 
       <motion.div variants={item}>
@@ -97,14 +97,14 @@ export function NotesPage() {
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Textarea
                 placeholder="Escreva sua nota..."
                 value={newNote}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewNote(e.target.value)}
-                className="flex-1"
+                className="flex-1 min-h-[80px] sm:min-h-[40px]"
               />
-              <Button onClick={handleCreate} disabled={!newNote.trim()}>
+              <Button onClick={handleCreate} disabled={!newNote.trim()} className="sm:self-end">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>

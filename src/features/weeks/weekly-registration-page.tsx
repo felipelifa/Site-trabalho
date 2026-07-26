@@ -244,10 +244,10 @@ export function WeeklyRegistrationPage() {
       animate="show"
       className="space-y-6"
     >
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Registro Semanal</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Registro Semanal</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             {format(weekStart, "d 'de' MMMM", { locale: pt })} - {format(weekEnd, "d 'de' MMMM", { locale: pt })}
           </p>
         </div>
@@ -259,7 +259,7 @@ export function WeeklyRegistrationPage() {
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <Badge variant="secondary" className="px-4 py-1">
+          <Badge variant="secondary" className="px-3 sm:px-4 py-1">
             Semana {weekNumber}
           </Badge>
           <Button
@@ -333,23 +333,24 @@ export function WeeklyRegistrationPage() {
                 layout
               >
                 <Card className={`transition-all ${dayData.worked ? 'border-green-500/30' : ''}`}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  <CardContent className="p-3 sm:p-6">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center ${
                           dayData.worked
                             ? 'bg-green-500/10 text-green-600'
                             : isHoliday
                             ? 'bg-purple-500/10 text-purple-600'
                             : 'bg-muted text-muted-foreground'
                         }`}>
-                          <span className="text-sm font-bold">
+                          <span className="text-xs sm:text-sm font-bold">
                             {format(date, 'EEE', { locale: pt })}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-foreground">
-                            {format(date, "EEEE, d 'de' MMMM", { locale: pt })}
+                          <p className="font-medium text-foreground text-sm md:text-base">
+                            <span className="hidden sm:inline">{format(date, "EEEE, d 'de' MMMM", { locale: pt })}</span>
+                            <span className="sm:hidden">{format(date, "EEE, d 'de' MMM", { locale: pt })}</span>
                           </p>
                           {isHoliday && holidayName && (
                             <p className="text-sm text-purple-600 dark:text-purple-400">
@@ -452,15 +453,15 @@ export function WeeklyRegistrationPage() {
 
       <motion.div variants={item}>
         <Card className="bg-primary/5 border-primary/20">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total da Semana</p>
-                <p className="text-3xl font-bold text-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">Total da Semana</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
                   €{weekEarnings.total.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
                 {isSaving ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />

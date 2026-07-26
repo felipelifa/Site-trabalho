@@ -169,22 +169,22 @@ export function DashboardPage() {
       className="space-y-6"
     >
       <motion.div variants={item} className="space-y-1">
-        <h1 className="text-3xl font-bold text-foreground">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
           {getGreeting()}, {user?.email?.split('@')[0]}
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm md:text-base text-muted-foreground">
           {format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: pt })}
         </p>
       </motion.div>
 
       <motion.div variants={item}>
         <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-6">
             <div className="flex items-center gap-3 mb-4">
-              <Target className="w-6 h-6 text-primary" />
+              <Target className="w-5 h-5 md:w-6 md:h-6 text-primary" />
               <div>
-                <p className="text-sm text-muted-foreground">Competência Atual</p>
-                <p className="text-2xl font-bold text-foreground capitalize">{monthName}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Competência Atual</p>
+                <p className="text-lg md:text-2xl font-bold text-foreground capitalize">{monthName}</p>
               </div>
             </div>
 
@@ -221,55 +221,55 @@ export function DashboardPage() {
         </Card>
       </motion.div>
 
-      <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Salário Base</p>
-                <p className="text-2xl font-bold text-foreground">{formatEuro(settings?.base_salary ?? 0)}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Salário Base</p>
+                <p className="text-lg md:text-2xl font-bold text-foreground">{formatEuro(settings?.base_salary ?? 0)}</p>
               </div>
-              <div className="p-3 rounded-xl bg-green-500/10">
-                <DollarSign className="w-6 h-6 text-green-500" />
+              <div className="p-2 md:p-3 rounded-xl bg-green-500/10">
+                <DollarSign className="w-4 h-4 md:w-6 md:h-6 text-green-500" />
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Ganhos do Mês</p>
-                <p className="text-2xl font-bold text-foreground">{formatEuro(monthEarnings.total)}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Ganhos do Mês</p>
+                <p className="text-lg md:text-2xl font-bold text-foreground">{formatEuro(monthEarnings.total)}</p>
               </div>
-              <div className="p-3 rounded-xl bg-blue-500/10">
-                <TrendingUp className="w-6 h-6 text-blue-500" />
+              <div className="p-2 md:p-3 rounded-xl bg-blue-500/10">
+                <TrendingUp className="w-4 h-4 md:w-6 md:h-6 text-blue-500" />
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Dias Trabalhados</p>
-                <p className="text-2xl font-bold text-foreground">{daysWorked}/6</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Dias Trabalhados</p>
+                <p className="text-lg md:text-2xl font-bold text-foreground">{daysWorked}/6</p>
               </div>
-              <div className="p-3 rounded-xl bg-purple-500/10">
-                <Briefcase className="w-6 h-6 text-purple-500" />
+              <div className="p-2 md:p-3 rounded-xl bg-purple-500/10">
+                <Briefcase className="w-4 h-4 md:w-6 md:h-6 text-purple-500" />
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Dias Restantes</p>
-                <p className="text-2xl font-bold text-foreground">{Math.max(0, daysRemaining)}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Dias Restantes</p>
+                <p className="text-lg md:text-2xl font-bold text-foreground">{Math.max(0, daysRemaining)}</p>
               </div>
-              <div className="p-3 rounded-xl bg-orange-500/10">
-                <Clock className="w-6 h-6 text-orange-500" />
+              <div className="p-2 md:p-3 rounded-xl bg-orange-500/10">
+                <Clock className="w-4 h-4 md:w-6 md:h-6 text-orange-500" />
               </div>
             </div>
           </CardContent>
@@ -306,7 +306,7 @@ export function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-6 gap-2">
+              <div className="grid grid-cols-6 gap-1 sm:gap-2">
                 {DAY_LABELS.map((day, index) => {
                   const dayDate = new Date(weekStart)
                   dayDate.setDate(dayDate.getDate() + index)
@@ -339,18 +339,18 @@ export function DashboardPage() {
                     <div key={day} className="relative">
                       <button
                         onClick={() => setSelectedDay(isSelected ? null : dateStr)}
-                        className={`w-full p-3 rounded-xl text-center transition-all cursor-pointer hover:opacity-80 ${statusColor} ${isToday ? 'ring-2 ring-primary/40' : ''}`}
+                        className={`w-full p-1.5 sm:p-3 rounded-xl text-center transition-all cursor-pointer hover:opacity-80 ${statusColor} ${isToday ? 'ring-2 ring-primary/40' : ''}`}
                       >
-                        <p className="text-xs font-medium">{day}</p>
-                        <p className="text-lg font-bold">{format(dayDate, 'd')}</p>
-                        {statusIcon && <div className="flex justify-center mt-1">{statusIcon}</div>}
+                        <p className="text-[10px] sm:text-xs font-medium">{day}</p>
+                        <p className="text-sm sm:text-lg font-bold">{format(dayDate, 'd')}</p>
+                        {statusIcon && <div className="flex justify-center mt-0.5 sm:mt-1">{statusIcon}</div>}
                         {workDay?.destination && isWorked && (
-                          <p className="text-[10px] mt-0.5 opacity-70">{workDay.destination}</p>
+                          <p className="text-[8px] sm:text-[10px] mt-0.5 opacity-70">{workDay.destination}</p>
                         )}
                       </button>
 
                       {isSelected && (
-                        <div className="absolute top-full left-0 right-0 z-50 mt-1 p-2 bg-card border border-border rounded-xl shadow-lg">
+                        <div className="absolute top-full left-0 right-0 z-50 mt-1 p-2 bg-card border border-border rounded-xl shadow-lg min-w-[220px]">
                           <p className="text-xs font-medium text-muted-foreground mb-2 text-center">
                             {format(dayDate, "d 'de' MMMM", { locale: pt })}
                           </p>

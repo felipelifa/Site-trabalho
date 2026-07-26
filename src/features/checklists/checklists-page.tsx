@@ -62,8 +62,8 @@ export function ChecklistsPage() {
       className="space-y-6"
     >
       <motion.div variants={item}>
-        <h1 className="text-3xl font-bold text-foreground">Checklists</h1>
-        <p className="text-muted-foreground">Organize suas tarefas diárias</p>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Checklists</h1>
+        <p className="text-sm md:text-base text-muted-foreground">Organize suas tarefas diárias</p>
       </motion.div>
 
       <motion.div variants={item}>

@@ -96,50 +96,52 @@ export function StatisticsPage() {
       className="space-y-6"
     >
       <motion.div variants={item}>
-        <h1 className="text-3xl font-bold text-foreground">Estatísticas</h1>
-        <p className="text-muted-foreground">Analise seu desempenho financeiro</p>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Estatísticas</h1>
+        <p className="text-sm md:text-base text-muted-foreground">Analise seu desempenho financeiro</p>
       </motion.div>
 
-      <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
         <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Total Ganho</p>
-            <p className="text-2xl font-bold text-foreground">
+          <CardContent className="p-3 md:p-6">
+            <p className="text-xs md:text-sm text-muted-foreground">Total Ganho</p>
+            <p className="text-lg md:text-2xl font-bold text-foreground">
               {formatEuro(stats.totalEarned)}
             </p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Média Semanal</p>
-            <p className="text-2xl font-bold text-foreground">
+          <CardContent className="p-3 md:p-6">
+            <p className="text-xs md:text-sm text-muted-foreground">Média Semanal</p>
+            <p className="text-lg md:text-2xl font-bold text-foreground">
               {formatEuro(stats.averagePerWeek)}
             </p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Maior Semana</p>
-            <p className="text-2xl font-bold text-foreground">
+          <CardContent className="p-3 md:p-6">
+            <p className="text-xs md:text-sm text-muted-foreground">Maior Semana</p>
+            <p className="text-lg md:text-2xl font-bold text-foreground">
               {formatEuro(stats.maxEarned)}
             </p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Total de Semanas</p>
-            <p className="text-2xl font-bold text-foreground">{stats.totalWeeks}</p>
+          <CardContent className="p-3 md:p-6">
+            <p className="text-xs md:text-sm text-muted-foreground">Total de Semanas</p>
+            <p className="text-lg md:text-2xl font-bold text-foreground">{stats.totalWeeks}</p>
           </CardContent>
         </Card>
       </motion.div>
 
       <motion.div variants={item}>
         <Tabs defaultValue="monthly" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="monthly">Mensal</TabsTrigger>
-            <TabsTrigger value="cities">Cidades</TabsTrigger>
-            <TabsTrigger value="trends">Tendências</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList>
+              <TabsTrigger value="monthly">Mensal</TabsTrigger>
+              <TabsTrigger value="cities">Cidades</TabsTrigger>
+              <TabsTrigger value="trends">Tendências</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="monthly">
             <Card>

@@ -89,10 +89,10 @@ export function CalendarPage() {
     >
       <motion.div variants={item} className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Calendário</h1>
-          <p className="text-muted-foreground">Visualize seus dias de trabalho</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Calendário</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Visualize seus dias de trabalho</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Button
             variant="outline"
             size="icon"
@@ -100,7 +100,7 @@ export function CalendarPage() {
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <span className="font-medium text-foreground min-w-[180px] text-center">
+          <span className="font-medium text-foreground text-sm md:text-base min-w-[120px] md:min-w-[180px] text-center capitalize">
             {format(currentDate, "MMMM 'de' yyyy", { locale: pt })}
           </span>
           <Button
@@ -115,16 +115,16 @@ export function CalendarPage() {
 
       <motion.div variants={item}>
         <Card>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-7 gap-2 mb-4">
+          <CardContent className="p-3 sm:p-6">
+            <div className="grid grid-cols-7 gap-0.5 sm:gap-2 mb-4">
               {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day) => (
-                <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
+                <div key={day} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-1 sm:py-2">
                   {day}
                 </div>
               ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-0.5 sm:gap-2">
               {Array.from({ length: (monthStart.getDay() + 6) % 7 }).map((_, index) => (
                 <div key={`empty-${index}`} />
               ))}
@@ -140,11 +140,11 @@ export function CalendarPage() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setSelectedDate(date)}
-                    className={`relative p-3 rounded-xl border transition-all ${getStatusColor(status.type)} ${
+                    className={`relative p-1 sm:p-3 rounded-lg sm:rounded-xl border transition-all ${getStatusColor(status.type)} ${
                       isSelected ? 'ring-2 ring-primary' : ''
                     } ${isPast ? 'opacity-60' : ''}`}
                   >
-                    <span className="text-sm font-medium">{format(date, 'd')}</span>
+                    <span className="text-xs sm:text-sm font-medium">{format(date, 'd')}</span>
                     {status.type === 'worked' && (
                       <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
                         <MapPin className="w-3 h-3" />

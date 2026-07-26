@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
   Calendar,
@@ -13,6 +13,7 @@ import {
   Moon,
   Sun,
   ChevronLeft,
+  X,
 } from 'lucide-react'
 import { useAuthContext } from '@/hooks/use-auth-context'
 import { cn } from '@/lib/utils'
@@ -30,9 +31,12 @@ const navigation = [
 interface SidebarProps {
   collapsed: boolean
   onToggle: () => void
+  isMobile: boolean
+  mobileOpen: boolean
+  onMobileClose: () => void
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, isMobile, mobileOpen, onMobileClose }: SidebarProps) {
   const location = useLocation()
   const { signOut } = useAuthContext()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
@@ -44,13 +48,21 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     localStorage.setItem('theme', newTheme)
   }
 
-  return (
-    <motion.aside
-      initial={false}
-      animate={{ width: collapsed ? 72 : 260 }}
-      transition={{ duration: 0.2, ease: 'easeInOut' }}
-      className="fixed left-0 top-0 h-full bg-card border-r border-border z-50 flex flex-col"
-    >
+  useEffect(() => {
+    onMobileClose()
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (isMobile && mobileOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [isMobile, mobileOpen])
+
+  const sidebarContent = (
+    <>
       <div className="flex items-center justify-between p-4 border-b border-border">
         {!collapsed && (
           <motion.div
@@ -66,10 +78,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </motion.div>
         )}
         <button
-          onClick={onToggle}
+          onClick={isMobile ? onMobileClose : onToggle}
           className="p-2 rounded-lg hover:bg-muted transition-colors"
         >
-          {collapsed ? <Menu className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+          {isMobile ? <X className="w-5 h-5" /> : (collapsed ? <Menu className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />)}
         </button>
       </div>
 
@@ -118,6 +130,44 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           {!collapsed && <span className="text-sm font-medium">Sair</span>}
         </button>
       </div>
+    </>
+  )
+
+  if (isMobile) {
+    return (
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onMobileClose}
+              className="fixed inset-0 bg-black/50 z-50"
+            />
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+              className="fixed left-0 top-0 h-full w-[260px] bg-card border-r border-border z-50 flex flex-col"
+            >
+              {sidebarContent}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    )
+  }
+
+  return (
+    <motion.aside
+      initial={false}
+      animate={{ width: collapsed ? 72 : 260 }}
+      transition={{ duration: 0.2, ease: 'easeInOut' }}
+      className="fixed left-0 top-0 h-full bg-card border-r border-border z-50 flex flex-col hidden md:flex"
+    >
+      {sidebarContent}
     </motion.aside>
   )
 }
