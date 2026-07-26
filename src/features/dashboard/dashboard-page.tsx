@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -10,12 +10,13 @@ import {
   Zap,
   Plane,
   ChevronRight,
+  ChevronLeft,
   MapPin,
   X,
   Clock,
   Target,
 } from 'lucide-react'
-import { format, startOfWeek, endOfWeek, addMonths } from 'date-fns'
+import { format, startOfWeek, endOfWeek, addMonths, subMonths } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -52,6 +53,8 @@ export function DashboardPage() {
   const { data: allWeeks = [] } = useWorkWeeks()
   const ensureCompetency = useEnsureCompetency()
 
+  const [selectedDate, setSelectedDate] = useState(new Date())
+
   useEffect(() => {
     ensureCompetency.mutate()
   }, [])
@@ -66,19 +69,21 @@ export function DashboardPage() {
   const { data: rules = [] } = useSalaryRules()
 
   const now = new Date()
-  const currentMonth = now.getMonth() + 1
-  const currentYear = now.getFullYear()
-  const { data: monthWorkDays = [] } = useWorkDaysByMonth(currentYear, currentMonth)
+  const selectedMonth = selectedDate.getMonth() + 1
+  const selectedYear = selectedDate.getFullYear()
+  const { data: monthWorkDays = [] } = useWorkDaysByMonth(selectedYear, selectedMonth)
   const weekStart = startOfWeek(now, { weekStartsOn: 1 })
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
+
+  const isCurrentMonth = selectedMonth === now.getMonth() + 1 && selectedYear === now.getFullYear()
 
   const monthEarnings = useMemo(() => {
     if (!monthWorkDays.length) return { total: 0, breakdown: [] }
     return calculateMonthEarnings(monthWorkDays, rules, settings ?? undefined)
   }, [monthWorkDays, rules, settings])
 
-  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate()
-  const daysPassed = now.getDate()
+  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate()
+  const daysPassed = isCurrentMonth ? now.getDate() : (selectedDate < now ? daysInMonth : 0)
   const daysLeftInMonth = daysInMonth - daysPassed
   const progressPercent = Math.round((daysPassed / daysInMonth) * 100)
 
@@ -91,7 +96,7 @@ export function DashboardPage() {
   }).length
   const totalWeeks = allWeeks.filter(w => {
     const d = new Date(w.start_date)
-    return d.getMonth() + 1 === currentMonth && d.getFullYear() === currentYear
+    return d.getMonth() + 1 === selectedMonth && d.getFullYear() === selectedYear
   }).length
 
   const getGreeting = () => {
@@ -177,9 +182,9 @@ export function DashboardPage() {
 
   const nextEvents = useMemo(() => {
     const events: { date: Date; label: string }[] = []
-    const competenceEnd = new Date(currentYear, currentMonth, 0)
-    const nextCompetence = new Date(currentYear, currentMonth, 1)
-    const payment = new Date(currentYear, currentMonth, 15)
+    const competenceEnd = new Date(selectedYear, selectedMonth, 0)
+    const nextCompetence = new Date(selectedYear, selectedMonth, 1)
+    const payment = new Date(selectedYear, selectedMonth, 15)
 
     if (payment <= now) {
       payment.setMonth(payment.getMonth() + 1)
@@ -193,7 +198,7 @@ export function DashboardPage() {
       .filter(e => e.date >= now)
       .sort((a, b) => a.date.getTime() - b.date.getTime())
       .slice(0, 3)
-  }, [currentYear, currentMonth, now])
+  }, [selectedYear, selectedMonth, now])
 
   const financialBreakdown = useMemo(() => {
     const items: { label: string; amount: number; positive: boolean }[] = []
@@ -251,16 +256,41 @@ export function DashboardPage() {
       className="flex flex-col lg:flex-row gap-4 lg:gap-6"
     >
       <div className="flex-1 space-y-4">
-        <motion.div variants={item} className="space-y-1">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
-            {getGreeting()}, {user?.email?.split('@')[0]} 👋
-          </h1>
-          <p className="text-sm md:text-base text-muted-foreground capitalize">
-            {format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: pt })}
-          </p>
-          <div className="flex items-center gap-2 mt-1">
+        <motion.div variants={item} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+              {getGreeting()}, {user?.email?.split('@')[0]} 👋
+            </h1>
+            <p className="text-sm md:text-base text-muted-foreground capitalize">
+              {format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: pt })}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => setSelectedDate(subMonths(selectedDate, 1))}>
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <div className="text-center min-w-[120px]">
+              <p className="text-sm font-bold text-foreground capitalize">{format(selectedDate, "MMMM", { locale: pt })}</p>
+              <p className={`text-[10px] font-medium ${
+                isCurrentMonth
+                  ? 'text-green-600 dark:text-green-400'
+                  : selectedDate < new Date(now.getFullYear(), now.getMonth(), 1)
+                    ? 'text-muted-foreground'
+                    : 'text-primary'
+              }`}>
+                {isCurrentMonth ? 'Mês Atual' : selectedDate < new Date(now.getFullYear(), now.getMonth(), 1) ? 'Mês Passado' : 'Próximo Mês'}
+              </p>
+            </div>
+            <Button variant="outline" size="icon" onClick={() => setSelectedDate(addMonths(selectedDate, 1))}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </motion.div>
+
+        <motion.div variants={item}>
+          <div className="flex items-center gap-2">
             <Badge variant="secondary" className="text-xs">
-              Competência: {format(now, 'MMMM yyyy', { locale: pt })}
+              Competência: {format(selectedDate, 'MMMM yyyy', { locale: pt })}
             </Badge>
           </div>
         </motion.div>
@@ -530,7 +560,7 @@ export function DashboardPage() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Fim</span>
                     <span className="font-medium text-foreground">
-                      {format(new Date(currentYear, currentMonth, 0), "d 'de' MMMM", { locale: pt })}
+                      {format(new Date(selectedYear, selectedMonth, 0), "d 'de' MMMM", { locale: pt })}
                     </span>
                   </div>
                   <div className="flex justify-between">
