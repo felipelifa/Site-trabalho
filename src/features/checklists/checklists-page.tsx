@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { format } from 'date-fns'
+import { format, addDays, subDays } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import { Plus, Trash2, ChevronLeft, ChevronRight, Check, Edit2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
