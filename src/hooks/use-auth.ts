@@ -131,21 +131,6 @@ export function useAuth() {
     }
   }, [])
 
-  const signInWithGoogle = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: null }))
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
-    if (error) {
-      setState(prev => ({ ...prev, loading: false, error }))
-      return { success: false, error }
-    }
-    return { success: true, data }
-  }, [])
-
   const signInWithMagicLink = useCallback(async (email: string) => {
     setState(prev => ({ ...prev, loading: true, error: null }))
     const { data, error } = await supabase.auth.signInWithOtp({
@@ -181,7 +166,6 @@ export function useAuth() {
     ...state,
     signInWithEmail,
     signUpWithEmail,
-    signInWithGoogle,
     signInWithMagicLink,
     signOut,
   }

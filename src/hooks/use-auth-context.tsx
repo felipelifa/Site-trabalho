@@ -9,7 +9,6 @@ interface AuthContextType {
   isAuthenticated: boolean
   signInWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: unknown; data?: unknown }>
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<{ success: boolean; error?: unknown; data?: unknown }>
-  signInWithGoogle: () => Promise<{ success: boolean; error?: unknown; data?: unknown }>
   signInWithMagicLink: (email: string) => Promise<{ success: boolean; error?: unknown; data?: unknown }>
   signOut: () => Promise<{ success: boolean; error?: unknown }>
 }
@@ -26,7 +25,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: !!auth.user,
     signInWithEmail: auth.signInWithEmail,
     signUpWithEmail: auth.signUpWithEmail,
-    signInWithGoogle: auth.signInWithGoogle,
     signInWithMagicLink: auth.signInWithMagicLink,
     signOut: auth.signOut,
   }
