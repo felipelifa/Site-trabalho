@@ -2,10 +2,10 @@ import { useMemo, useState, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import {
-  ChevronLeft, ChevronRight, DollarSign, TrendingUp, TrendingDown, MapPin, Calendar,
-  Target, ChevronDown, Clock, Briefcase, AlertTriangle, Gift, Utensils, Home,
+  ChevronLeft, ChevronRight, DollarSign, TrendingUp, MapPin, Calendar,
+  Target, ChevronDown, Clock, Briefcase, AlertTriangle, Gift, Utensils,
   Star, Tag, Paperclip, Camera, CheckSquare, Plus, X, Download, FileText,
-  Image, File, Trash2, Edit3, Save, MessageSquare, Award, Zap, BarChart3,
+  File, Trash2, Save, MessageSquare, Award, Zap, BarChart3,
   Bed, Users, ArrowUp, ArrowDown, Minus
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -211,7 +211,6 @@ export function StatisticsPage() {
 
   const paymentDate = useMemo(() => {
     const nextMonth = monthNum === 12 ? 1 : monthNum + 1
-    const nextYear = monthNum === 12 ? selectedYear + 1 : selectedYear
     return `15 ${MONTHS_FULL[nextMonth - 1]}`
   }, [monthNum, selectedYear])
 
@@ -228,7 +227,6 @@ export function StatisticsPage() {
   const [newChecklistItem, setNewChecklistItem] = useState('')
   const [newTag, setNewTag] = useState('')
   const [selectedTagColor, setSelectedTagColor] = useState(TAG_COLORS[0])
-  const [activeDetailTab, setActiveDetailTab] = useState('financial')
 
   const handleSaveNote = useCallback(() => {
     upsertNote.mutate({
