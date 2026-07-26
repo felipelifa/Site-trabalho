@@ -76,7 +76,7 @@ export function WeeklyRegistrationPage() {
 
   const weekDays = useMemo(() => {
     return eachDayOfInterval({ start: weekStart, end: weekEnd })
-      .filter(date => date.getDay() >= 1 && date.getDay() <= 5)
+      .filter(date => date.getDay() >= 1 && date.getDay() <= 6)
   }, [weekStart, weekEnd])
 
   const [daysData, setDaysData] = useState<DayData[]>([])

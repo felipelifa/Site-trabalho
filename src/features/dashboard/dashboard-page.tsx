@@ -48,7 +48,7 @@ const item = {
   show: { opacity: 1, y: 0 },
 }
 
-const DAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']
+const DAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab']
 const CITY_OPTIONS = ['Porto', 'Lisboa', 'Algarve']
 
 export function DashboardPage() {
@@ -85,7 +85,7 @@ export function DashboardPage() {
   }, [workDays, rules, settings])
 
   const daysWorked = workDays.filter(d => d.worked).length
-  const daysRemaining = 5 - daysWorked
+  const daysRemaining = 6 - daysWorked
 
   const daysInMonth = new Date(currentYear, currentMonth, 0).getDate()
   const daysPassed = now.getDate()
@@ -253,7 +253,7 @@ export function DashboardPage() {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Dias Trabalhados</p>
-                <p className="text-2xl font-bold text-foreground">{daysWorked}/5</p>
+                <p className="text-2xl font-bold text-foreground">{daysWorked}/6</p>
               </div>
               <div className="p-3 rounded-xl bg-purple-500/10">
                 <Briefcase className="w-6 h-6 text-purple-500" />
@@ -306,7 +306,7 @@ export function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-6 gap-2">
                 {DAY_LABELS.map((day, index) => {
                   const dayDate = new Date(weekStart)
                   dayDate.setDate(dayDate.getDate() + index)
