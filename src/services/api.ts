@@ -135,6 +135,18 @@ export const salaryRulesService = {
 
     const missing: Tables['salary_rules']['Insert'][] = []
 
+    if (!existingSet.has('week_city:Porto')) {
+      missing.push({ user_id: userId, name: 'Semana Porto', type: 'base', amount: 50, condition_type: 'week_city', condition_value: 'Porto', city: 'Porto', is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 10 })
+    }
+    if (!existingSet.has('saturday:Porto')) {
+      missing.push({ user_id: userId, name: 'Sábado Porto', type: 'overtime', amount: 80, condition_type: 'saturday', condition_value: 'Porto', city: 'Porto', day_of_week: 6, is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 20 })
+    }
+    if (!existingSet.has('holiday:Porto')) {
+      missing.push({ user_id: userId, name: 'Feriado Porto', type: 'bonus', amount: 80, condition_type: 'holiday', condition_value: 'Porto', city: 'Porto', is_holiday: true, is_vacation: false, is_absence: false, active: true, priority: 30 })
+    }
+    if (!existingSet.has('vacation:Porto')) {
+      missing.push({ user_id: userId, name: 'Férias Porto', type: 'bonus', amount: 80, condition_type: 'vacation', condition_value: 'Porto', city: 'Porto', is_holiday: false, is_vacation: true, is_absence: false, active: true, priority: 30 })
+    }
     if (!existingSet.has('week_city:Algarve')) {
       missing.push({ user_id: userId, name: 'Semana Algarve', type: 'base', amount: 140, condition_type: 'week_city', condition_value: 'Algarve', city: 'Algarve', is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 10 })
     }
@@ -147,17 +159,17 @@ export const salaryRulesService = {
     if (!existingSet.has('vacation:Algarve')) {
       missing.push({ user_id: userId, name: 'Férias Algarve', type: 'bonus', amount: 110, condition_type: 'vacation', condition_value: 'Algarve', city: 'Algarve', is_holiday: false, is_vacation: true, is_absence: false, active: true, priority: 30 })
     }
-    if (!existingSet.has('holiday:Lisboa')) {
-      missing.push({ user_id: userId, name: 'Feriado Lisboa', type: 'bonus', amount: 110, condition_type: 'holiday', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: true, is_vacation: false, is_absence: false, active: true, priority: 30 })
-    }
-    if (!existingSet.has('vacation:Lisboa')) {
-      missing.push({ user_id: userId, name: 'Férias Lisboa', type: 'bonus', amount: 110, condition_type: 'vacation', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: false, is_vacation: true, is_absence: false, active: true, priority: 30 })
-    }
     if (!existingSet.has('week_city:Lisboa')) {
       missing.push({ user_id: userId, name: 'Semana Lisboa', type: 'base', amount: 140, condition_type: 'week_city', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 10 })
     }
     if (!existingSet.has('saturday:Lisboa')) {
       missing.push({ user_id: userId, name: 'Sábado Lisboa', type: 'overtime', amount: 110, condition_type: 'saturday', condition_value: 'Lisboa', city: 'Lisboa', day_of_week: 6, is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 20 })
+    }
+    if (!existingSet.has('holiday:Lisboa')) {
+      missing.push({ user_id: userId, name: 'Feriado Lisboa', type: 'bonus', amount: 110, condition_type: 'holiday', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: true, is_vacation: false, is_absence: false, active: true, priority: 30 })
+    }
+    if (!existingSet.has('vacation:Lisboa')) {
+      missing.push({ user_id: userId, name: 'Férias Lisboa', type: 'bonus', amount: 110, condition_type: 'vacation', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: false, is_vacation: true, is_absence: false, active: true, priority: 30 })
     }
 
     if (missing.length > 0) {
