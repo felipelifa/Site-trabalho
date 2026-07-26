@@ -11,6 +11,11 @@ import {
   checklistsService,
   remindersService,
   competenciesService,
+  monthNotesService,
+  monthChecklistsService,
+  monthTagsService,
+  monthAttachmentsService,
+  monthRatingsService,
 } from '@/services/api'
 import { calculateWeekEarnings } from '@/utils/rules-engine'
 
@@ -408,6 +413,166 @@ export function useUpdateCompetency() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['competencies'] })
       queryClient.invalidateQueries({ queryKey: ['competency'] })
+    },
+  })
+}
+
+// Month Notes hooks
+export function useMonthNotes(month: number, year: number) {
+  const { user } = useAuthContext()
+  return useQuery({
+    queryKey: ['month-notes', user?.id, month, year],
+    queryFn: () => monthNotesService.getByPeriod(user!.id, month, year),
+    enabled: !!user,
+  })
+}
+
+export function useUpsertMonthNote() {
+  const queryClient = useQueryClient()
+  const { user } = useAuthContext()
+
+  return useMutation({
+    mutationFn: (note: Record<string, unknown>) =>
+      monthNotesService.upsert({ ...note, user_id: user!.id } as never),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['month-notes'] })
+    },
+  })
+}
+
+// Month Checklists hooks
+export function useMonthChecklists(month: number, year: number) {
+  const { user } = useAuthContext()
+  return useQuery({
+    queryKey: ['month-checklists', user?.id, month, year],
+    queryFn: () => monthChecklistsService.getByPeriod(user!.id, month, year),
+    enabled: !!user,
+  })
+}
+
+export function useCreateMonthChecklistItem() {
+  const queryClient = useQueryClient()
+  const { user } = useAuthContext()
+
+  return useMutation({
+    mutationFn: (item: Record<string, unknown>) =>
+      monthChecklistsService.create({ ...item, user_id: user!.id } as never),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['month-checklists'] })
+    },
+  })
+}
+
+export function useUpdateMonthChecklistItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, ...item }: { id: string } & Record<string, unknown>) =>
+      monthChecklistsService.update(id, item),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['month-checklists'] })
+    },
+  })
+}
+
+export function useDeleteMonthChecklistItem() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => monthChecklistsService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['month-checklists'] })
+    },
+  })
+}
+
+// Month Tags hooks
+export function useMonthTags(month: number, year: number) {
+  const { user } = useAuthContext()
+  return useQuery({
+    queryKey: ['month-tags', user?.id, month, year],
+    queryFn: () => monthTagsService.getByPeriod(user!.id, month, year),
+    enabled: !!user,
+  })
+}
+
+export function useCreateMonthTag() {
+  const queryClient = useQueryClient()
+  const { user } = useAuthContext()
+
+  return useMutation({
+    mutationFn: (tag: Record<string, unknown>) =>
+      monthTagsService.create({ ...tag, user_id: user!.id } as never),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['month-tags'] })
+    },
+  })
+}
+
+export function useDeleteMonthTag() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => monthTagsService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['month-tags'] })
+    },
+  })
+}
+
+// Month Attachments hooks
+export function useMonthAttachments(month: number, year: number) {
+  const { user } = useAuthContext()
+  return useQuery({
+    queryKey: ['month-attachments', user?.id, month, year],
+    queryFn: () => monthAttachmentsService.getByPeriod(user!.id, month, year),
+    enabled: !!user,
+  })
+}
+
+export function useCreateMonthAttachment() {
+  const queryClient = useQueryClient()
+  const { user } = useAuthContext()
+
+  return useMutation({
+    mutationFn: (attachment: Record<string, unknown>) =>
+      monthAttachmentsService.create({ ...attachment, user_id: user!.id } as never),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['month-attachments'] })
+    },
+  })
+}
+
+export function useDeleteMonthAttachment() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => monthAttachmentsService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['month-attachments'] })
+    },
+  })
+}
+
+// Month Ratings hooks
+export function useMonthRating(month: number, year: number) {
+  const { user } = useAuthContext()
+  return useQuery({
+    queryKey: ['month-rating', user?.id, month, year],
+    queryFn: () => monthRatingsService.getByPeriod(user!.id, month, year),
+    enabled: !!user,
+  })
+}
+
+export function useUpsertMonthRating() {
+  const queryClient = useQueryClient()
+  const { user } = useAuthContext()
+
+  return useMutation({
+    mutationFn: (rating: Record<string, unknown>) =>
+      monthRatingsService.upsert({ ...rating, user_id: user!.id } as never),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['month-rating'] })
     },
   })
 }

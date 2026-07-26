@@ -603,3 +603,183 @@ export const competenciesService = {
     return data
   },
 }
+
+// Month Notes operations
+export const monthNotesService = {
+  async getByPeriod(userId: string, month: number, year: number) {
+    const { data, error } = await supabase
+      .from('month_notes')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year)
+      .maybeSingle()
+    if (error) throw error
+    return data
+  },
+
+  async upsert(note: Tables['month_notes']['Insert']) {
+    const { data, error } = await supabase
+      .from('month_notes')
+      .upsert(note, { onConflict: 'user_id,month,year' })
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+}
+
+// Month Checklists operations
+export const monthChecklistsService = {
+  async getByPeriod(userId: string, month: number, year: number) {
+    const { data, error } = await supabase
+      .from('month_checklists')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year)
+      .order('sort_order', { ascending: true })
+    if (error) throw error
+    return data
+  },
+
+  async create(item: Tables['month_checklists']['Insert']) {
+    const { data, error } = await supabase
+      .from('month_checklists')
+      .insert(item)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  async update(id: string, item: Partial<Tables['month_checklists']['Update']>) {
+    const { data, error } = await supabase
+      .from('month_checklists')
+      .update(item)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from('month_checklists')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+  },
+}
+
+// Month Tags operations
+export const monthTagsService = {
+  async getByPeriod(userId: string, month: number, year: number) {
+    const { data, error } = await supabase
+      .from('month_tags')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year)
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return data
+  },
+
+  async create(tag: Tables['month_tags']['Insert']) {
+    const { data, error } = await supabase
+      .from('month_tags')
+      .insert(tag)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from('month_tags')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+  },
+}
+
+// Month Attachments operations
+export const monthAttachmentsService = {
+  async getByPeriod(userId: string, month: number, year: number) {
+    const { data, error } = await supabase
+      .from('month_attachments')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return data
+  },
+
+  async create(attachment: Tables['month_attachments']['Insert']) {
+    const { data, error } = await supabase
+      .from('month_attachments')
+      .insert(attachment)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from('month_attachments')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+  },
+
+  async upload(file: File, userId: string) {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${userId}/month-attachments/${Date.now()}.${fileExt}`
+    const { data, error } = await supabase.storage
+      .from('receipts')
+      .upload(fileName, file)
+    if (error) throw error
+
+    const { data: urlData } = supabase.storage
+      .from('receipts')
+      .getPublicUrl(data.path)
+
+    return {
+      file_url: urlData.publicUrl,
+      file_name: file.name,
+      file_type: file.type,
+      file_size: file.size,
+    }
+  },
+}
+
+// Month Ratings operations
+export const monthRatingsService = {
+  async getByPeriod(userId: string, month: number, year: number) {
+    const { data, error } = await supabase
+      .from('month_ratings')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year)
+      .maybeSingle()
+    if (error) throw error
+    return data
+  },
+
+  async upsert(rating: Tables['month_ratings']['Insert']) {
+    const { data, error } = await supabase
+      .from('month_ratings')
+      .upsert(rating, { onConflict: 'user_id,month,year' })
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+}

@@ -562,6 +562,174 @@ export interface Database {
         }
         Relationships: []
       }
+      month_notes: {
+        Row: {
+          id: string
+          user_id: string
+          month: number
+          year: number
+          content: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          month: number
+          year: number
+          content?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          month?: number
+          year?: number
+          content?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      month_checklists: {
+        Row: {
+          id: string
+          user_id: string
+          month: number
+          year: number
+          item: string
+          completed: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          month: number
+          year: number
+          item: string
+          completed?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          month?: number
+          year?: number
+          item?: string
+          completed?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      month_tags: {
+        Row: {
+          id: string
+          user_id: string
+          month: number
+          year: number
+          tag: string
+          color: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          month: number
+          year: number
+          tag: string
+          color?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          month?: number
+          year?: number
+          tag?: string
+          color?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      month_attachments: {
+        Row: {
+          id: string
+          user_id: string
+          month: number
+          year: number
+          file_name: string
+          file_url: string
+          file_type: string
+          file_size: number
+          category: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          month: number
+          year: number
+          file_name: string
+          file_url: string
+          file_type: string
+          file_size?: number
+          category?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          month?: number
+          year?: number
+          file_name?: string
+          file_url?: string
+          file_type?: string
+          file_size?: number
+          category?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      month_ratings: {
+        Row: {
+          id: string
+          user_id: string
+          month: number
+          year: number
+          rating: number | null
+          reflection: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          month: number
+          year: number
+          rating?: number | null
+          reflection?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          month?: number
+          year?: number
+          rating?: number | null
+          reflection?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
