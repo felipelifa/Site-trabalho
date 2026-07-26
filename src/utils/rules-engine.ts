@@ -1,5 +1,5 @@
 import type { Database } from '@/types/database'
-import { isSaturday } from '@/utils/holidays'
+import { isSaturday, isNationalHoliday } from '@/utils/holidays'
 
 type SalaryRule = Database['public']['Tables']['salary_rules']['Row']
 type WorkDay = Database['public']['Tables']['work_days']['Row']
@@ -11,7 +11,9 @@ export interface Settings {
   fourteenth_month?: boolean
 }
 
+const BASE_SALARY = 820
 const MEAL_VOUCHER = 4.50
+const DUODECIMOS = 150
 
 export interface CalculationResult {
   total: number
@@ -29,6 +31,19 @@ export interface DayCalculation {
   total: number
   meal_deducted: boolean
   applied_rules: string[]
+}
+
+function getWorkingDaysInMonth(year: number, month: number): number {
+  let count = 0
+  const daysInMonth = new Date(year, month, 0).getDate()
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(year, month - 1, d)
+    const dow = date.getDay()
+    if (dow >= 1 && dow <= 5 && !isNationalHoliday(date)) {
+      count++
+    }
+  }
+  return count
 }
 
 const DEFAULT_RULES: Omit<SalaryRule, 'id' | 'user_id' | 'created_at' | 'updated_at'>[] = [
@@ -194,9 +209,8 @@ export function calculateDayEarnings(
   const isHol = workDay.is_holiday
   const isVac = workDay.is_vacation
   const isAbs = workDay.is_absence
-  const worked = workDay.worked
 
-  if (isSat && worked) {
+  if (isSat && workDay.worked) {
     const dest = workDay.destination
     if (dest === 'Porto') {
       total += 80
@@ -208,7 +222,7 @@ export function calculateDayEarnings(
     return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
   }
 
-  if (isHol && worked) {
+  if (isHol && workDay.worked) {
     const dest = workDay.destination
     if (dest === 'Porto') {
       total += 80
@@ -250,25 +264,13 @@ export function calculateDayEarnings(
   return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
 }
 
-function buildWeekEarnings(
+export function calculateWeekEarnings(
   workDays: WorkDay[],
   rules: SalaryRule[],
-  settings?: Settings
+  _settings?: Settings
 ): CalculationResult {
   let total = 0
   const breakdown: CalculationResult['breakdown'] = []
-
-  if (settings) {
-    const base = settings.base_salary ?? 820
-    if (base > 0) {
-      breakdown.push({ rule_id: 'base', rule_name: 'Salário Base', amount: base, applied: true, reason: 'Salário Base mensal (820€)' })
-      total += base
-    }
-
-    const duodecimos = 150
-    breakdown.push({ rule_id: 'duodecimos', rule_name: 'Duodécimos', amount: duodecimos, applied: true, reason: 'Duodécimos - 150€ fixo mensal' })
-    total += duodecimos
-  }
 
   let daysForMeal = 0
   for (const workDay of workDays) {
@@ -315,33 +317,45 @@ function buildWeekEarnings(
   return { total, breakdown }
 }
 
-export function calculateWeekEarnings(
-  workDays: WorkDay[],
-  rules: SalaryRule[],
-  settings?: Settings
-): CalculationResult {
-  return buildWeekEarnings(workDays, rules, settings)
-}
-
 export function calculateMonthEarnings(
   workDays: WorkDay[],
   rules: SalaryRule[],
-  settings?: Settings
+  _settings?: Settings,
+  year?: number,
+  month?: number
 ): CalculationResult {
   let total = 0
   const breakdown: CalculationResult['breakdown'] = []
 
-  if (settings) {
-    const base = settings.base_salary ?? 820
-    if (base > 0) {
-      breakdown.push({ rule_id: 'base', rule_name: 'Salário Base', amount: base, applied: true, reason: 'Salário Base mensal (820€)' })
-      total += base
-    }
+  const effectiveYear = year ?? new Date().getFullYear()
+  const effectiveMonth = month ?? (new Date().getMonth() + 1)
 
-    const duodecimos = 150
-    breakdown.push({ rule_id: 'duodecimos', rule_name: 'Duodécimos', amount: duodecimos, applied: true, reason: 'Duodécimos - 150€ fixo mensal' })
-    total += duodecimos
+  const totalWorkingDays = getWorkingDaysInMonth(effectiveYear, effectiveMonth)
+  const workedDays = workDays.filter(d => d.worked).length
+
+  const baseSalary = totalWorkingDays > 0
+    ? Math.round((BASE_SALARY / totalWorkingDays) * workedDays * 100) / 100
+    : 0
+
+  if (baseSalary > 0) {
+    breakdown.push({
+      rule_id: 'base',
+      rule_name: 'Salário Base',
+      amount: baseSalary,
+      applied: true,
+      reason: `${BASE_SALARY}€ / ${totalWorkingDays} dias × ${workedDays} dias trabalhados`,
+    })
+    total += baseSalary
   }
+
+  breakdown.push({
+    rule_id: 'duodecimos',
+    rule_name: 'Duodécimos',
+    amount: DUODECIMOS,
+    applied: true,
+    reason: 'Duodécimos - 150€ fixo mensal',
+  })
+  total += DUODECIMOS
 
   const weekRules = rules.filter(r => r.active && r.condition_type === 'week_city')
   const weekIds = new Set(workDays.map(d => d.week_id).filter(Boolean))
