@@ -4,10 +4,6 @@ import {
   ChevronLeft,
   ChevronRight,
   MapPin,
-  CheckCircle2,
-  X,
-  Plane,
-  AlertCircle,
   DollarSign,
   TrendingUp,
   TrendingDown,
@@ -18,7 +14,6 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterv
 import { pt } from 'date-fns/locale'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { useWorkDaysByMonth, useWorkDaysByMonth as usePrevMonth } from '@/hooks/use-queries'
 import { isNationalHoliday, isFafeMunicipalHoliday, getHolidayName } from '@/utils/holidays'
 import { calculateDayEarnings } from '@/utils/rules-engine'
