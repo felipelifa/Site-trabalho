@@ -161,7 +161,7 @@ export function useUpdateProfile() {
 
   return useMutation({
     mutationFn: (profile: Record<string, unknown>) =>
-      profileService.upprofile(user!.id, profile),
+      profileService.upsertProfile(user!.id, profile),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] })
     },

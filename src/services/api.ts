@@ -15,7 +15,7 @@ export const profileService = {
     return data
   },
 
-  async upprofile(userId: string, profile: Partial<Tables['profiles']['Insert']>) {
+  async upsertProfile(userId: string, profile: Partial<Tables['profiles']['Insert']>) {
     const { data, error } = await supabase
       .from('profiles')
       .upsert({ ...profile, user_id: userId })
@@ -213,7 +213,8 @@ export const workDaysService = {
 
   async getByMonth(userId: string, year: number, month: number) {
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-    const endDate = `${year}-${String(month).padStart(2, '0')}-31`
+    const lastDay = new Date(year, month, 0).getDate()
+    const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
     const { data, error } = await supabase
       .from('work_days')
       .select('*')

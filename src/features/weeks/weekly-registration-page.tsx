@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { useWorkWeek, useWorkDaysByWeek, useWorkWeeks, useSettings, useSalaryRules } from '@/hooks/use-queries'
-import { useCreateWorkWeek, useUpsertWorkDay } from '@/hooks/use-queries'
+import { useCreateWorkWeek, useUpdateWorkWeek, useUpsertWorkDay } from '@/hooks/use-queries'
 import { calculateWeekEarnings, calculateDayEarnings } from '@/utils/rules-engine'
 import { isNationalHoliday, isFafeMunicipalHoliday, getHolidayName } from '@/utils/holidays'
 
@@ -111,6 +111,7 @@ export function WeeklyRegistrationPage() {
   const { data: rules = [] } = useSalaryRules()
 
   const createWeek = useCreateWorkWeek()
+  const updateWeek = useUpdateWorkWeek()
   const upsertDay = useUpsertWorkDay()
 
   const weekDays = useMemo(() => {
@@ -242,6 +243,11 @@ export function WeeklyRegistrationPage() {
           notes: day.notes || null,
         })
       }
+
+      if (weekId && weekEarnings.total !== 0) {
+        await updateWeek.mutateAsync({ id: weekId, total_earned: weekEarnings.total })
+      }
+
       setSaveMessage({ type: 'success', text: 'Salvo' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erro ao salvar.'
@@ -249,7 +255,7 @@ export function WeeklyRegistrationPage() {
     } finally {
       setIsSaving(false)
     }
-  }, [existingWeek, weekNumber, year, weekStart, weekEnd, createWeek, upsertDay, rules, weekEarnings.total])
+  }, [existingWeek, weekNumber, year, weekStart, weekEnd, createWeek, updateWeek, upsertDay, rules, weekEarnings.total])
 
   useEffect(() => {
     if (isInitialLoadRef.current) return

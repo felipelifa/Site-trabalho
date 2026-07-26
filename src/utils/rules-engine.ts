@@ -296,6 +296,21 @@ export function calculateWeekEarnings(
     total += mealVoucher
   }
 
+  const weekRules = rules.filter(r => r.active && r.condition_type === 'week_city')
+  const weekDestinos = new Set(workDays.filter(d => d.worked && d.destination).map(d => d.destination))
+  for (const rule of weekRules) {
+    if (weekDestinos.has(rule.condition_value)) {
+      total += rule.amount
+      breakdown.push({
+        rule_id: rule.id,
+        rule_name: rule.name,
+        amount: rule.amount,
+        applied: true,
+        reason: `${rule.name} - semana`,
+      })
+    }
+  }
+
   return { total, breakdown }
 }
 
