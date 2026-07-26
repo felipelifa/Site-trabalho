@@ -119,12 +119,26 @@ const DEFAULT_RULES: Omit<SalaryRule, 'id' | 'user_id' | 'created_at' | 'updated
     priority: 30,
   },
   {
-    name: 'Férias',
+    name: 'Férias Lisboa/Algarve',
+    type: 'bonus',
+    amount: 110,
+    condition_type: 'vacation',
+    condition_value: 'Lisboa',
+    city: 'Lisboa',
+    day_of_week: null,
+    is_holiday: false,
+    is_vacation: true,
+    is_absence: false,
+    active: true,
+    priority: 30,
+  },
+  {
+    name: 'Férias Porto',
     type: 'bonus',
     amount: 80,
     condition_type: 'vacation',
-    condition_value: null,
-    city: null,
+    condition_value: 'Porto',
+    city: 'Porto',
     day_of_week: null,
     is_holiday: false,
     is_vacation: true,
@@ -218,8 +232,14 @@ export function calculateDayEarnings(
   }
 
   if (workDay.is_vacation) {
-    total += 80
-    appliedRules.push('vacation')
+    const dest = workDay.destination
+    if (dest === 'Lisboa' || dest === 'Algarve') {
+      total += 110
+      appliedRules.push('vacation-lisboa-algarve')
+    } else {
+      total += 80
+      appliedRules.push('vacation-porto')
+    }
     return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
   }
 
@@ -272,7 +292,8 @@ export function calculateWeekEarnings(
       else if (ruleId === 'saturday-lisboa-algarve') ruleName = 'Sábado Lisboa/Algarve'
       else if (ruleId === 'holiday-porto') ruleName = 'Feriado Porto'
       else if (ruleId === 'holiday-lisboa-algarve') ruleName = 'Feriado Lisboa/Algarve'
-      else if (ruleId === 'vacation') ruleName = 'Férias'
+      else if (ruleId === 'vacation-porto') ruleName = 'Férias Porto'
+      else if (ruleId === 'vacation-lisboa-algarve') ruleName = 'Férias Lisboa/Algarve'
 
       breakdown.push({
         rule_id: ruleId,
@@ -386,7 +407,8 @@ export function calculateMonthEarnings(
       else if (ruleId === 'saturday-lisboa-algarve') ruleName = 'Sábado Lisboa/Algarve'
       else if (ruleId === 'holiday-porto') ruleName = 'Feriado Porto'
       else if (ruleId === 'holiday-lisboa-algarve') ruleName = 'Feriado Lisboa/Algarve'
-      else if (ruleId === 'vacation') ruleName = 'Férias'
+      else if (ruleId === 'vacation-porto') ruleName = 'Férias Porto'
+      else if (ruleId === 'vacation-lisboa-algarve') ruleName = 'Férias Lisboa/Algarve'
 
       breakdown.push({
         rule_id: ruleId,

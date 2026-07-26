@@ -312,7 +312,7 @@ export function CalendarPage() {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
     saveTimeoutRef.current = setTimeout(() => {
       performSave(dayData)
-    }, 1500)
+    }, 500)
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
     }
