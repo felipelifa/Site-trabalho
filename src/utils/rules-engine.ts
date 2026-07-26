@@ -242,8 +242,12 @@ export function calculateDayEarnings(
         }
       }
     } else if (workDay.worked) {
-      if (rule.condition_type === 'saturday' && isSaturday(date) && workDay.destination === rule.condition_value) {
-        applies = true
+      if (rule.condition_type === 'saturday' && isSaturday(date)) {
+        if (rule.condition_value === 'Lisboa' && (workDay.destination === 'Lisboa' || workDay.destination === 'Algarve')) {
+          applies = true
+        } else if (workDay.destination === rule.condition_value) {
+          applies = true
+        }
       } else if (rule.condition_type === 'city_bonus' && workDay.destination === rule.condition_value && workDay.day_of_week !== 5) {
         applies = true
       } else if (rule.condition_type === 'friday_bonus' && workDay.day_of_week === 5 && workDay.destination === rule.condition_value) {
