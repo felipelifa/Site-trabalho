@@ -524,19 +524,27 @@ export function CalendarPage() {
         <motion.div variants={item} initial="hidden" animate="show" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Calendário</h1>
-            <p className="text-sm md:text-base text-muted-foreground capitalize">
-              {format(currentDate, "MMMM 'de' yyyy", { locale: pt })}
-            </p>
           </div>
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Button variant="outline" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            {!isToday(startOfMonth(currentDate)) && (
-              <Button variant="ghost" size="sm" onClick={() => setCurrentDate(new Date())}>
-                Voltar ao Hoje
-              </Button>
-            )}
+            <div className="text-center min-w-[140px]">
+              <p className="text-sm font-bold text-foreground capitalize">{format(currentDate, "MMMM", { locale: pt })}</p>
+              <p className={`text-[10px] font-medium ${
+                isToday(startOfMonth(currentDate))
+                  ? 'text-green-600 dark:text-green-400'
+                  : currentDate < new Date()
+                    ? 'text-muted-foreground'
+                    : 'text-primary'
+              }`}>
+                {isToday(startOfMonth(currentDate))
+                  ? 'Mês Atual'
+                  : currentDate < new Date()
+                    ? 'Mês Passado'
+                    : 'Próximo Mês'}
+              </p>
+            </div>
             <Button variant="outline" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
               <ChevronRight className="w-4 h-4" />
             </Button>
