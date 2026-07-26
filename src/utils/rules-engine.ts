@@ -11,8 +11,6 @@ export interface Settings {
   fourteenth_month?: boolean
 }
 
-const HOURLY_RATE = 5.31
-const DAILY_HOURS = 8
 const MEAL_VOUCHER = 4.50
 
 export interface CalculationResult {
@@ -29,6 +27,7 @@ export interface CalculationResult {
 export interface DayCalculation {
   date: string
   total: number
+  meal_deducted: boolean
   applied_rules: string[]
 }
 
@@ -90,12 +89,26 @@ const DEFAULT_RULES: Omit<SalaryRule, 'id' | 'user_id' | 'created_at' | 'updated
     priority: 20,
   },
   {
-    name: 'Feriado',
+    name: 'Feriado Lisboa/Algarve',
+    type: 'bonus',
+    amount: 110,
+    condition_type: 'holiday',
+    condition_value: 'Lisboa',
+    city: 'Lisboa',
+    day_of_week: null,
+    is_holiday: true,
+    is_vacation: false,
+    is_absence: false,
+    active: true,
+    priority: 30,
+  },
+  {
+    name: 'Feriado Porto',
     type: 'bonus',
     amount: 80,
     condition_type: 'holiday',
-    condition_value: null,
-    city: null,
+    condition_value: 'Porto',
+    city: 'Porto',
     day_of_week: null,
     is_holiday: true,
     is_vacation: false,
@@ -159,48 +172,6 @@ const DEFAULT_RULES: Omit<SalaryRule, 'id' | 'user_id' | 'created_at' | 'updated
     active: true,
     priority: 50,
   },
-  {
-    name: 'Adicional Diário Porto',
-    type: 'bonus',
-    amount: 10,
-    condition_type: 'city_bonus',
-    condition_value: 'Porto',
-    city: 'Porto',
-    day_of_week: null,
-    is_holiday: false,
-    is_vacation: false,
-    is_absence: false,
-    active: true,
-    priority: 15,
-  },
-  {
-    name: 'Adicional Diário Lisboa/Algarve',
-    type: 'bonus',
-    amount: 30,
-    condition_type: 'city_bonus',
-    condition_value: 'Lisboa',
-    city: 'Lisboa',
-    day_of_week: null,
-    is_holiday: false,
-    is_vacation: false,
-    is_absence: false,
-    active: true,
-    priority: 15,
-  },
-  {
-    name: 'Adicional Sexta-feira Lisboa/Algarve',
-    type: 'bonus',
-    amount: 20,
-    condition_type: 'friday_bonus',
-    condition_value: 'Lisboa',
-    city: 'Lisboa',
-    day_of_week: 5,
-    is_holiday: false,
-    is_vacation: false,
-    is_absence: false,
-    active: true,
-    priority: 25,
-  },
 ]
 
 export function getDefaultRules(userId: string): Omit<SalaryRule, 'id' | 'created_at' | 'updated_at'>[] {
@@ -217,58 +188,69 @@ export function calculateDayEarnings(
 ): DayCalculation {
   let total = 0
   const appliedRules: string[] = []
+  let mealDeducted = false
 
-  const sortedRules = [...rules]
-    .filter(r => r.active)
-    .sort((a, b) => b.priority - a.priority)
+  const isSat = isSaturday(date)
+  const isHol = workDay.is_holiday
+  const isVac = workDay.is_vacation
+  const isAbs = workDay.is_absence
+  const worked = workDay.worked
 
-  for (const rule of sortedRules) {
-    if (rule.condition_type === 'week_city') continue
-
-    let applies = false
-
-    if (workDay.is_holiday && rule.is_holiday) {
-      applies = true
-    } else if (workDay.is_vacation && rule.is_vacation) {
-      applies = true
-    } else if (workDay.is_absence) {
-      if (rule.is_absence) {
-        if (rule.condition_value === 'monday' && workDay.day_of_week === 1) {
-          applies = true
-        } else if (rule.condition_value === 'friday' && workDay.day_of_week === 5) {
-          applies = true
-        } else if (rule.condition_value === 'normal') {
-          applies = true
-        }
-      }
-    } else if (workDay.worked) {
-      if (rule.condition_type === 'saturday' && isSaturday(date)) {
-        if (rule.condition_value === 'Lisboa' && (workDay.destination === 'Lisboa' || workDay.destination === 'Algarve')) {
-          applies = true
-        } else if (workDay.destination === rule.condition_value) {
-          applies = true
-        }
-      } else if (rule.condition_type === 'city_bonus' && workDay.destination === rule.condition_value && workDay.day_of_week !== 5) {
-        applies = true
-      } else if (rule.condition_type === 'friday_bonus' && workDay.day_of_week === 5 && workDay.destination === rule.condition_value) {
-        applies = true
-      }
+  if (isSat && worked) {
+    const dest = workDay.destination
+    if (dest === 'Porto') {
+      total += 80
+      appliedRules.push('saturday-porto')
+    } else if (dest === 'Lisboa' || dest === 'Algarve') {
+      total += 110
+      appliedRules.push('saturday-lisboa-algarve')
     }
-
-    if (applies) {
-      total += rule.amount
-      appliedRules.push(rule.id)
-    }
+    return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
   }
 
-  return {
-    date: workDay.date,
-    total,
-    applied_rules: appliedRules,
+  if (isHol && worked) {
+    const dest = workDay.destination
+    if (dest === 'Porto') {
+      total += 80
+      appliedRules.push('holiday-porto')
+    } else if (dest === 'Lisboa' || dest === 'Algarve') {
+      total += 110
+      appliedRules.push('holiday-lisboa-algarve')
+    }
+    return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
   }
+
+  if (isVac) {
+    total += 80
+    appliedRules.push('vacation')
+    return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
+  }
+
+  if (isAbs) {
+    const sortedRules = [...rules].filter(r => r.active && r.is_absence).sort((a, b) => b.priority - a.priority)
+    for (const rule of sortedRules) {
+      if (rule.condition_value === 'monday' && workDay.day_of_week === 1) {
+        total += rule.amount
+        appliedRules.push(rule.id)
+        break
+      } else if (rule.condition_value === 'friday' && workDay.day_of_week === 5) {
+        total += rule.amount
+        appliedRules.push(rule.id)
+        break
+      } else if (rule.condition_value === 'normal') {
+        total += rule.amount
+        appliedRules.push(rule.id)
+        break
+      }
+    }
+    mealDeducted = true
+    return { date: workDay.date, total, meal_deducted: mealDeducted, applied_rules: appliedRules }
+  }
+
+  return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
 }
 
-export function calculateWeekEarnings(
+function buildWeekEarnings(
   workDays: WorkDay[],
   rules: SalaryRule[],
   settings?: Settings
@@ -277,84 +259,68 @@ export function calculateWeekEarnings(
   const breakdown: CalculationResult['breakdown'] = []
 
   if (settings) {
-    const base = settings.base_salary ?? 0
-    const meal = settings.meal_allowance ?? 0
-    const duodecimos = (settings.thirteenth_month ? 75 : 0) + (settings.fourteenth_month ? 75 : 0)
-
+    const base = settings.base_salary ?? 820
     if (base > 0) {
-      breakdown.push({ rule_id: 'base', rule_name: 'Salário Base', amount: base, applied: true, reason: 'Salário Base mensal' })
+      breakdown.push({ rule_id: 'base', rule_name: 'Salário Base', amount: base, applied: true, reason: 'Salário Base mensal (820€)' })
       total += base
     }
-    if (meal > 0) {
-      breakdown.push({ rule_id: 'meal', rule_name: 'Subsídio Alimentação', amount: meal, applied: true, reason: 'Subsídio Alimentação mensal' })
-      total += meal
-    }
-    if (duodecimos > 0) {
-      breakdown.push({ rule_id: 'duodecimos', rule_name: 'Duodécimos', amount: duodecimos, applied: true, reason: 'Duodécimos (Natal + Férias)' })
-      total += duodecimos
-    }
+
+    const duodecimos = 150
+    breakdown.push({ rule_id: 'duodecimos', rule_name: 'Duodécimos', amount: duodecimos, applied: true, reason: 'Duodécimos - 150€ fixo mensal' })
+    total += duodecimos
   }
 
-  const workedDays = workDays.filter(d => d.worked).length
-  const hourlyPay = workedDays * DAILY_HOURS * HOURLY_RATE
-  if (workedDays > 0) {
-    breakdown.push({
-      rule_id: 'hourly',
-      rule_name: 'Trabalho Horário',
-      amount: hourlyPay,
-      applied: true,
-      reason: `${workedDays} dias × ${DAILY_HOURS}h × €${HOURLY_RATE}`,
-    })
-    total += hourlyPay
-  }
-
-  const mealVoucher = workedDays * MEAL_VOUCHER
-  if (workedDays > 0) {
-    breakdown.push({
-      rule_id: 'meal_voucher',
-      rule_name: 'Vale Alimentação',
-      amount: mealVoucher,
-      applied: true,
-      reason: `${workedDays} dias × €${MEAL_VOUCHER}`,
-    })
-    total += mealVoucher
-  }
-
-  const weekRules = rules.filter(r => r.active && r.condition_type === 'week_city')
-  const destinos = new Set(workDays.filter(d => d.worked && d.destination).map(d => d.destination))
-  for (const rule of weekRules) {
-    if (destinos.has(rule.condition_value)) {
-      total += rule.amount
-      breakdown.push({
-        rule_id: rule.id,
-        rule_name: rule.name,
-        amount: rule.amount,
-        applied: true,
-        reason: `${rule.name} - semana`,
-      })
-    }
-  }
-
+  let daysForMeal = 0
   for (const workDay of workDays) {
     const date = new Date(workDay.date)
     const dayCalc = calculateDayEarnings(workDay, rules, date)
     total += dayCalc.total
 
+    if (workDay.worked && !dayCalc.meal_deducted) {
+      daysForMeal++
+    }
+
     for (const ruleId of dayCalc.applied_rules) {
       const rule = rules.find(r => r.id === ruleId)
-      if (rule) {
-        breakdown.push({
-          rule_id: rule.id,
-          rule_name: rule.name,
-          amount: rule.amount,
-          applied: true,
-          reason: `${rule.name} - ${workDay.date}`,
-        })
-      }
+      let ruleName = ruleId
+      if (rule) ruleName = rule.name
+      else if (ruleId === 'saturday-porto') ruleName = 'Sábado Porto'
+      else if (ruleId === 'saturday-lisboa-algarve') ruleName = 'Sábado Lisboa/Algarve'
+      else if (ruleId === 'holiday-porto') ruleName = 'Feriado Porto'
+      else if (ruleId === 'holiday-lisboa-algarve') ruleName = 'Feriado Lisboa/Algarve'
+      else if (ruleId === 'vacation') ruleName = 'Férias'
+
+      breakdown.push({
+        rule_id: ruleId,
+        rule_name: ruleName,
+        amount: dayCalc.total,
+        applied: true,
+        reason: `${ruleName} - ${workDay.date}`,
+      })
     }
   }
 
+  const mealVoucher = daysForMeal * MEAL_VOUCHER
+  if (daysForMeal > 0) {
+    breakdown.push({
+      rule_id: 'meal_voucher',
+      rule_name: 'Subsídio Alimentação',
+      amount: mealVoucher,
+      applied: true,
+      reason: `${daysForMeal} dias × €${MEAL_VOUCHER}`,
+    })
+    total += mealVoucher
+  }
+
   return { total, breakdown }
+}
+
+export function calculateWeekEarnings(
+  workDays: WorkDay[],
+  rules: SalaryRule[],
+  settings?: Settings
+): CalculationResult {
+  return buildWeekEarnings(workDays, rules, settings)
 }
 
 export function calculateMonthEarnings(
@@ -366,51 +332,18 @@ export function calculateMonthEarnings(
   const breakdown: CalculationResult['breakdown'] = []
 
   if (settings) {
-    const base = settings.base_salary ?? 0
-    const meal = settings.meal_allowance ?? 0
-    const duodecimos = (settings.thirteenth_month ? 75 : 0) + (settings.fourteenth_month ? 75 : 0)
-
+    const base = settings.base_salary ?? 820
     if (base > 0) {
-      breakdown.push({ rule_id: 'base', rule_name: 'Salário Base', amount: base, applied: true, reason: 'Salário Base mensal' })
+      breakdown.push({ rule_id: 'base', rule_name: 'Salário Base', amount: base, applied: true, reason: 'Salário Base mensal (820€)' })
       total += base
     }
-    if (meal > 0) {
-      breakdown.push({ rule_id: 'meal', rule_name: 'Subsídio Alimentação', amount: meal, applied: true, reason: 'Subsídio Alimentação mensal' })
-      total += meal
-    }
-    if (duodecimos > 0) {
-      breakdown.push({ rule_id: 'duodecimos', rule_name: 'Duodécimos', amount: duodecimos, applied: true, reason: 'Duodécimos (Natal + Férias)' })
-      total += duodecimos
-    }
-  }
 
-  const workedDays = workDays.filter(d => d.worked).length
-  const hourlyPay = workedDays * DAILY_HOURS * HOURLY_RATE
-  if (workedDays > 0) {
-    breakdown.push({
-      rule_id: 'hourly',
-      rule_name: 'Trabalho Horário',
-      amount: hourlyPay,
-      applied: true,
-      reason: `${workedDays} dias × ${DAILY_HOURS}h × €${HOURLY_RATE}`,
-    })
-    total += hourlyPay
-  }
-
-  const mealVoucher = workedDays * MEAL_VOUCHER
-  if (workedDays > 0) {
-    breakdown.push({
-      rule_id: 'meal_voucher',
-      rule_name: 'Vale Alimentação',
-      amount: mealVoucher,
-      applied: true,
-      reason: `${workedDays} dias × €${MEAL_VOUCHER}`,
-    })
-    total += mealVoucher
+    const duodecimos = 150
+    breakdown.push({ rule_id: 'duodecimos', rule_name: 'Duodécimos', amount: duodecimos, applied: true, reason: 'Duodécimos - 150€ fixo mensal' })
+    total += duodecimos
   }
 
   const weekRules = rules.filter(r => r.active && r.condition_type === 'week_city')
-
   const weekIds = new Set(workDays.map(d => d.week_id).filter(Boolean))
   for (const weekId of weekIds) {
     const weekDays = workDays.filter(d => d.week_id === weekId)
@@ -429,23 +362,46 @@ export function calculateMonthEarnings(
     }
   }
 
+  let daysForMeal = 0
   for (const workDay of workDays) {
     const date = new Date(workDay.date)
     const dayCalc = calculateDayEarnings(workDay, rules, date)
     total += dayCalc.total
 
+    if (workDay.worked && !dayCalc.meal_deducted) {
+      daysForMeal++
+    }
+
     for (const ruleId of dayCalc.applied_rules) {
       const rule = rules.find(r => r.id === ruleId)
-      if (rule) {
-        breakdown.push({
-          rule_id: rule.id,
-          rule_name: rule.name,
-          amount: rule.amount,
-          applied: true,
-          reason: `${rule.name} - ${workDay.date}`,
-        })
-      }
+      let ruleName = ruleId
+      if (rule) ruleName = rule.name
+      else if (ruleId === 'saturday-porto') ruleName = 'Sábado Porto'
+      else if (ruleId === 'saturday-lisboa-algarve') ruleName = 'Sábado Lisboa/Algarve'
+      else if (ruleId === 'holiday-porto') ruleName = 'Feriado Porto'
+      else if (ruleId === 'holiday-lisboa-algarve') ruleName = 'Feriado Lisboa/Algarve'
+      else if (ruleId === 'vacation') ruleName = 'Férias'
+
+      breakdown.push({
+        rule_id: ruleId,
+        rule_name: ruleName,
+        amount: dayCalc.total,
+        applied: true,
+        reason: `${ruleName} - ${workDay.date}`,
+      })
     }
+  }
+
+  const mealVoucher = daysForMeal * MEAL_VOUCHER
+  if (daysForMeal > 0) {
+    breakdown.push({
+      rule_id: 'meal_voucher',
+      rule_name: 'Subsídio Alimentação',
+      amount: mealVoucher,
+      applied: true,
+      reason: `${daysForMeal} dias × €${MEAL_VOUCHER}`,
+    })
+    total += mealVoucher
   }
 
   return { total, breakdown }
