@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart } from 'recharts'
 import { ChevronLeft, ChevronRight, DollarSign, TrendingUp, TrendingDown, MapPin, Calendar, Target, ChevronDown } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -44,7 +44,6 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 export function StatisticsPage() {
   const { data: workWeeks = [] } = useWorkWeeks()
   const currentYear = new Date().getFullYear()
-  const currentMonth = new Date().getMonth()
   const [selectedYear, setSelectedYear] = useState(currentYear)
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null)
   const [showMonthPicker, setShowMonthPicker] = useState(false)
@@ -57,7 +56,7 @@ export function StatisticsPage() {
   }, [workWeeks, selectedYear])
 
   const monthlyData = useMemo(() => {
-    return MONTHS_SHORT.map((month, index) => {
+    return MONTHS_SHORT.map((_month, index) => {
       const monthNum = index + 1
       const monthWorkDays = yearWorkDays.filter(d => {
         const date = new Date(d.date)
@@ -309,7 +308,7 @@ export function StatisticsPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={cityData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="earned"
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                          label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
                           {cityData.map((_entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
