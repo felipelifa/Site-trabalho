@@ -104,6 +104,17 @@ export function WeeklyRegistrationPage() {
   const weekNumber = getWeekNumber(weekStart)
   const year = weekStart.getFullYear()
 
+  const weekOfMonth = useMemo(() => {
+    const firstDayOfMonth = new Date(weekStart.getFullYear(), weekStart.getMonth(), 1)
+    const firstWeekStart = startOfWeek(firstDayOfMonth, { weekStartsOn: 1 })
+    const diffWeeks = Math.floor((weekStart.getTime() - firstWeekStart.getTime()) / (7 * 86400000))
+    return diffWeeks + 1
+  }, [weekStart])
+
+  const monthName = useMemo(() => {
+    return format(weekStart, 'MMMM', { locale: pt })
+  }, [weekStart])
+
   const { data: existingWeek } = useWorkWeek(year, weekNumber)
   const { data: existingDays = [] } = useWorkDaysByWeek(year, weekNumber)
   const { data: allWeeks = [] } = useWorkWeeks()
@@ -444,7 +455,7 @@ export function WeeklyRegistrationPage() {
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <Badge variant="secondary" className="px-3 sm:px-4 py-1 text-sm">
-              Semana {weekNumber}
+              Semana {weekOfMonth} do mês {monthName}
             </Badge>
             <Button variant="outline" size="icon" onClick={() => setCurrentDate(addWeeks(currentDate, 1))}>
               <ChevronRight className="w-4 h-4" />
@@ -478,7 +489,7 @@ export function WeeklyRegistrationPage() {
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="p-6 sm:p-8 text-center space-y-6">
                 <div className="space-y-2">
-                  <h2 className="text-xl font-bold text-foreground">Semana {weekNumber}</h2>
+                  <h2 className="text-xl font-bold text-foreground">Semana {weekOfMonth} do mês {monthName}</h2>
                   <p className="text-muted-foreground">Selecione o destino e crie a semana</p>
                 </div>
 
