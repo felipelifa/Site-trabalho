@@ -1,6 +1,6 @@
 import { useState, useMemo, type ChangeEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { format, isPast, isToday, addDays, differenceInDays } from 'date-fns'
+import { format, isPast, isToday, differenceInDays } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import { Plus, Trash2, Bell, Check, AlertTriangle, Clock, ChevronDown, ChevronUp, Edit2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'

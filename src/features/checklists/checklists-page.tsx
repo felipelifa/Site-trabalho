@@ -2,12 +2,11 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, addDays, subDays } from 'date-fns'
 import { pt } from 'date-fns/locale'
-import { Plus, Trash2, ChevronLeft, ChevronRight, Check, Circle } from 'lucide-react'
+import { Plus, Trash2, ChevronLeft, ChevronRight, Check } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
 import { useChecklist } from '@/hooks/use-queries'
 import { useCreateChecklistItem, useUpdateChecklistItem, useDeleteChecklistItem } from '@/hooks/use-queries'
 
@@ -21,12 +20,9 @@ const item = {
   show: { opacity: 1, y: 0 },
 }
 
-const CATEGORIES = ['Trabalho', 'Pessoal', 'Casa', 'Saúde', 'Compras', 'Outro']
-
 export function ChecklistsPage() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [newItem, setNewItem] = useState('')
-  const [newCategory, setNewCategory] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [filter, setFilter] = useState<'all' | 'pending' | 'done'>('all')
@@ -42,10 +38,8 @@ export function ChecklistsPage() {
       date: selectedDate,
       item: newItem,
       completed: false,
-      category: newCategory || undefined,
     })
     setNewItem('')
-    setNewCategory('')
   }
 
   const handleToggle = async (id: string, completed: boolean) => {
@@ -79,17 +73,6 @@ export function ChecklistsPage() {
     if (filter === 'done') return i.completed
     return true
   })
-
-  const getCategoryColor = (category?: string) => {
-    switch (category) {
-      case 'Trabalho': return 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-      case 'Pessoal': return 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
-      case 'Casa': return 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
-      case 'Saúde': return 'bg-green-500/10 text-green-600 dark:text-green-400'
-      case 'Compras': return 'bg-pink-500/10 text-pink-600 dark:text-pink-400'
-      default: return 'bg-muted text-muted-foreground'
-    }
-  }
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-4 lg:space-y-6">
@@ -148,16 +131,6 @@ export function ChecklistsPage() {
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleCreate()}
                 className="flex-1"
               />
-              <select
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                className="h-10 px-2 rounded-md border border-input bg-background text-xs text-muted-foreground"
-              >
-                <option value="">Sem cat.</option>
-                {CATEGORIES.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
               <Button onClick={handleCreate} disabled={!newItem.trim()}>
                 <Plus className="w-4 h-4" />
               </Button>
@@ -214,15 +187,10 @@ export function ChecklistsPage() {
                           {listItem.item}
                         </span>
                       </div>
-                      {(listItem as never).category && (
-                        <Badge variant="secondary" className={`text-[10px] ${getCategoryColor((listItem as never).category)}`}>
-                          {(listItem as never).category}
-                        </Badge>
-                      )}
                       <div className="flex gap-0.5">
                         <Button size="icon" variant="ghost" className="h-7 w-7"
                           onClick={() => { setEditingId(listItem.id); setEditText(listItem.item) }}>
-                          <Circle className="w-3 h-3" />
+                          <Edit2 className="w-3 h-3" />
                         </Button>
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(listItem.id)}>
                           <Trash2 className="w-3 h-3" />

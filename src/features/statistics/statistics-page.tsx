@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useWorkWeeks } from '@/hooks/use-queries'
-import { calculateWeekEarnings } from '@/utils/rules-engine'
 
 const container = {
   hidden: { opacity: 0 },
@@ -29,16 +28,6 @@ export function StatisticsPage() {
   const currentYear = new Date().getFullYear()
   const [selectedYear, setSelectedYear] = useState(currentYear)
 
-  const availableYears = useMemo(() => {
-    const years = new Set<number>()
-    years.add(currentYear)
-    workWeeks.forEach(w => {
-      const y = new Date(w.start_date).getFullYear()
-      years.add(y)
-    })
-    return Array.from(years).sort((a, b) => b - a)
-  }, [workWeeks])
-
   const yearWeeks = useMemo(() => {
     return workWeeks.filter(w => new Date(w.start_date).getFullYear() === selectedYear)
   }, [workWeeks, selectedYear])
@@ -47,13 +36,7 @@ export function StatisticsPage() {
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
     return months.map((month, index) => {
       const monthWeeks = yearWeeks.filter(w => new Date(w.start_date).getMonth() === index)
-      const totalEarned = monthWeeks.reduce((sum, w) => {
-        const days = (w as never as { work_days?: unknown[] }).work_days
-        if (days && Array.isArray(days)) {
-          return sum + calculateWeekEarnings(days as never, [])
-        }
-        return sum + (w.total_earned || 0)
-      }, 0)
+      const totalEarned = monthWeeks.reduce((sum, w) => sum + (w.total_earned || 0), 0)
       return { name: month, valor: totalEarned, semanas: monthWeeks.length }
     })
   }, [yearWeeks])
@@ -86,27 +69,8 @@ export function StatisticsPage() {
     const averagePerWeek = totalWeeks > 0 ? totalEarned / totalWeeks : 0
     const maxWeek = yearWeeks.reduce((max, w) => (w.total_earned || 0) > (max.total_earned || 0) ? w : max, yearWeeks[0])
     const maxEarned = maxWeek ? (maxWeek.total_earned || 0) : 0
-    const totalDays = yearWeeks.reduce((sum, w) => {
-      const days = (w as never as { work_days?: unknown[] }).work_days
-      return sum + (Array.isArray(days) ? days.length : 0)
-    }, 0)
-    const workedDays = yearWeeks.reduce((sum, w) => {
-      const days = (w as never as { work_days?: unknown[] }).work_days
-      if (!Array.isArray(days)) return sum
-      return sum + days.filter((d: never) => (d as never).worked).length
-    }, 0)
-    const totalAbsences = yearWeeks.reduce((sum, w) => {
-      const days = (w as never as { work_days?: unknown[] }).work_days
-      if (!Array.isArray(days)) return sum
-      return sum + days.filter((d: never) => (d as never).is_absence).length
-    }, 0)
-    const totalSaturdays = yearWeeks.reduce((sum, w) => {
-      const days = (w as never as { work_days?: unknown[] }).work_days
-      if (!Array.isArray(days)) return sum
-      return sum + days.filter((d: never) => (d as never).worked && new Date((d as never).date).getDay() === 6).length
-    }, 0)
 
-    return { totalEarned, totalWeeks, averagePerWeek, maxEarned, totalDays, workedDays, totalAbsences, totalSaturdays }
+    return { totalEarned, totalWeeks, averagePerWeek, maxEarned }
   }, [yearWeeks])
 
   const yearlyComparison = useMemo(() => {
@@ -192,23 +156,17 @@ export function StatisticsPage() {
         </Card>
       </motion.div>
 
-      <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
+      <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
         <Card>
           <CardContent className="p-3 md:p-4">
-            <span className="text-xs text-muted-foreground">Dias Trabalhados</span>
-            <p className="text-lg font-bold text-green-600 dark:text-green-400">{stats.workedDays}</p>
+            <span className="text-xs text-muted-foreground">Semanas com Destino</span>
+            <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{yearWeeks.filter(w => w.destination).length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 md:p-4">
-            <span className="text-xs text-muted-foreground">Sábados</span>
-            <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{stats.totalSaturdays}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 md:p-4">
-            <span className="text-xs text-muted-foreground">Faltas</span>
-            <p className="text-lg font-bold text-red-600 dark:text-red-400">{stats.totalAbsences}</p>
+            <span className="text-xs text-muted-foreground">Maior Ganho Semanal</span>
+            <p className="text-lg font-bold text-green-600 dark:text-green-400">{formatEuro(stats.maxEarned)}</p>
           </CardContent>
         </Card>
         {monthlyComparison && (
@@ -360,13 +318,9 @@ export function StatisticsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { label: 'Semanas Totais', value: stats.totalWeeks, color: 'text-foreground' },
-                    { label: 'Dias Trabalhados', value: stats.workedDays, color: 'text-green-600 dark:text-green-400' },
-                    { label: 'Sábados Trabalhados', value: stats.totalSaturdays, color: 'text-orange-600 dark:text-orange-400' },
-                    { label: 'Faltas', value: stats.totalAbsences, color: 'text-red-600 dark:text-red-400' },
                     { label: 'Ganho Total', value: formatEuro(stats.totalEarned), color: 'text-foreground' },
                     { label: 'Média Semanal', value: formatEuro(stats.averagePerWeek), color: 'text-foreground' },
                     { label: 'Melhor Semana', value: formatEuro(stats.maxEarned), color: 'text-green-600 dark:text-green-400' },
-                    { label: 'Média Diária', value: formatEuro(stats.workedDays > 0 ? stats.totalEarned / stats.workedDays : 0), color: 'text-foreground' },
                   ].map((stat, i) => (
                     <div key={i} className="p-3 bg-muted/50 rounded-lg">
                       <span className="text-xs text-muted-foreground">{stat.label}</span>
