@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval } from 'date-fns'
 import { pt } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Save, Loader2, MapPin, Home, CheckCircle2, AlertCircle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, MapPin, Home, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -60,6 +60,8 @@ export function WeeklyRegistrationPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isInitialLoadRef = useRef(true)
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 })
@@ -93,6 +95,7 @@ export function WeeklyRegistrationPage() {
 
     if (!initialLoadDoneRef.current && existingDays.length > 0) {
       initialLoadDoneRef.current = true
+      isInitialLoadRef.current = false
       setDaysData(weekDays.map(date => {
         const dateStr = format(date, 'yyyy-MM-dd')
         const existing = existingDays.find(d => d.date === dateStr)
@@ -113,6 +116,7 @@ export function WeeklyRegistrationPage() {
     } else if (!initialLoadDoneRef.current && existingWeek === null && existingDays.length === 0) {
       // No data for this week yet, initialize empty
       initialLoadDoneRef.current = true
+      isInitialLoadRef.current = false
       setDaysData(weekDays.map(date => ({
         date: format(date, 'yyyy-MM-dd'),
         dayOfWeek: date.getDay(),
@@ -130,6 +134,7 @@ export function WeeklyRegistrationPage() {
   }, [weekKey, existingDays, weekDays, settings?.default_city, existingWeek])
 
   const updateDay = (index: number, updates: Partial<DayData>) => {
+    setSaveMessage(null)
     setDaysData(prev => prev.map((day, i) => i === index ? { ...day, ...updates } : day))
   }
 
@@ -155,7 +160,8 @@ export function WeeklyRegistrationPage() {
     return calculateWeekEarnings(workDays, rules, settings ?? undefined)
   }, [daysData, rules])
 
-  const handleSave = async () => {
+  const performSave = useCallback(async (data: DayData[]) => {
+    if (!data.length) return
     setIsSaving(true)
     setSaveMessage(null)
     try {
@@ -167,14 +173,14 @@ export function WeeklyRegistrationPage() {
           year,
           start_date: format(weekStart, 'yyyy-MM-dd'),
           end_date: format(weekEnd, 'yyyy-MM-dd'),
-          destination: daysData[0]?.destination || 'Porto',
+          destination: data[0]?.destination || 'Porto',
           status: 'active',
           total_earned: weekEarnings.total,
         })
         weekId = newWeek.id
       }
 
-      for (const day of daysData) {
+      for (const day of data) {
         const workDayForCalc = {
           id: day.id || '',
           user_id: '',
@@ -211,14 +217,25 @@ export function WeeklyRegistrationPage() {
           notes: day.notes || null,
         })
       }
-      setSaveMessage({ type: 'success', text: 'Semana salva com sucesso!' })
+      setSaveMessage({ type: 'success', text: 'Salvo automaticamente' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erro ao salvar.'
       setSaveMessage({ type: 'error', text: msg })
     } finally {
       setIsSaving(false)
     }
-  }
+  }, [existingWeek, weekNumber, year, weekStart, weekEnd, createWeek, upsertDay, rules, weekEarnings.total])
+
+  useEffect(() => {
+    if (isInitialLoadRef.current) return
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+    saveTimeoutRef.current = setTimeout(() => {
+      performSave(daysData)
+    }, 1500)
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+    }
+  }, [daysData, performSave])
 
   return (
     <motion.div
@@ -443,14 +460,24 @@ export function WeeklyRegistrationPage() {
                   €{weekEarnings.total.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
-              <Button onClick={handleSave} disabled={isSaving} size="lg">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 {isSaving ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                Salvar
-              </Button>
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Salvando...</span>
+                  </>
+                ) : saveMessage?.type === 'success' ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    <span className="text-green-600">{saveMessage.text}</span>
+                  </>
+                ) : saveMessage?.type === 'error' ? (
+                  <>
+                    <AlertCircle className="w-4 h-4 text-red-500" />
+                    <span className="text-red-600">{saveMessage.text}</span>
+                  </>
+                ) : null}
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -79,10 +79,10 @@ export function DashboardPage() {
   const weekStart = startOfWeek(now, { weekStartsOn: 1 })
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
 
-  const weekEarnings = useMemo(() => {
-    if (!workDays.length) return { total: 0, breakdown: [] }
-    return calculateWeekEarnings(workDays, rules, settings ?? undefined)
-  }, [workDays, rules, settings])
+  const monthEarnings = useMemo(() => {
+    if (!monthWorkDays.length) return { total: 0, breakdown: [] }
+    return calculateWeekEarnings(monthWorkDays, rules, settings ?? undefined)
+  }, [monthWorkDays, rules, settings])
 
   const daysWorked = workDays.filter(d => d.worked).length
   const daysRemaining = 6 - daysWorked
@@ -195,7 +195,7 @@ export function DashboardPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Salário previsto</p>
-                <p className="font-bold text-foreground">{formatEuro(weekEarnings.total * 4.33)}</p>
+                <p className="font-bold text-foreground">{formatEuro(monthEarnings.total)}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Dias registrados</p>
@@ -239,8 +239,8 @@ export function DashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Ganhos Semana</p>
-                <p className="text-2xl font-bold text-foreground">{formatEuro(weekEarnings.total)}</p>
+                <p className="text-sm text-muted-foreground">Ganhos do Mês</p>
+                <p className="text-2xl font-bold text-foreground">{formatEuro(monthEarnings.total)}</p>
               </div>
               <div className="p-3 rounded-xl bg-blue-500/10">
                 <TrendingUp className="w-6 h-6 text-blue-500" />
@@ -427,7 +427,7 @@ export function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
-                {weekEarnings.breakdown.map((item, index) => (
+                {monthEarnings.breakdown.map((item, index) => (
                   <div key={index} className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground truncate">{item.rule_name}</span>
                     <span className={`text-sm font-medium ${
@@ -441,8 +441,8 @@ export function DashboardPage() {
 
               <div className="pt-4 border-t border-border">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-foreground">Total Semana</span>
-                  <span className="text-xl font-bold text-foreground">{formatEuro(weekEarnings.total)}</span>
+                  <span className="font-medium text-foreground">Total do Mês</span>
+                  <span className="text-xl font-bold text-foreground">{formatEuro(monthEarnings.total)}</span>
                 </div>
               </div>
 
