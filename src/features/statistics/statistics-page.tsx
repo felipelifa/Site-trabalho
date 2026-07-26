@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
-import { ChevronLeft, ChevronRight, DollarSign, TrendingUp, TrendingDown, MapPin, Calendar, Target, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, DollarSign, TrendingUp, TrendingDown, MapPin, Calendar, Target } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -95,10 +95,6 @@ export function StatisticsPage() {
     }).length
     const absences = yearWorkDays.filter(d => d.is_absence).length
     const vacations = yearWorkDays.filter(d => d.is_vacation).length
-    const holidays = yearWorkDays.filter(d => {
-      const date = new Date(d.date)
-      return (date.getDay() === 0 || date.getDay() === 6) && d.worked
-    }).length
 
     const maxWeek = yearWeeks.length > 0
       ? yearWeeks.reduce((max, w) => (w.total_earned || 0) > (max.total_earned || 0) ? w : max, yearWeeks[0])
