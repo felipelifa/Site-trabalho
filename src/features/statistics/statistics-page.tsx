@@ -2,8 +2,8 @@ import { useMemo, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronLeft, ChevronRight, DollarSign, MapPin, Calendar,
-  ChevronDown, Clock, Briefcase, AlertTriangle, Gift, Utensils,
-  Star, Tag, Paperclip, Camera, CheckSquare, Plus, X, Download, FileText,
+  ChevronDown, Clock, Briefcase, AlertTriangle, Camera,
+  Star, Tag, Plus, X, Download, FileText,
   File, Trash2, Save, Award, Zap, BarChart3, Bed, TrendingUp
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -199,8 +199,6 @@ export function StatisticsPage() {
   }, [user, monthNum, selectedYear, createAttachment])
 
   const periodLabel = `${MONTHS_FULL[selectedMonth]} ${selectedYear}`
-  const prevDiff = monthData.totalEarned - prevMonthData.total
-  const prevDiffPct = prevMonthData.total > 0 ? Math.round((prevDiff / prevMonthData.total) * 100) : 0
 
   const groupedBreakdown = useMemo(() => {
     const grouped: Record<string, { name: string; count: number; total: number }> = {}
