@@ -216,19 +216,19 @@ export function DashboardPage() {
     items.push({ label: 'Duodécimos', amount: 150, positive: true })
 
     const weekBonuses = monthEarnings.breakdown
-      .filter(b => b.rule_id.startsWith('week_city'))
+      .filter(b => b.rule_name.startsWith('Semana'))
     weekBonuses.forEach(b => {
       items.push({ label: b.rule_name, amount: b.amount, positive: true })
     })
 
     const satBonuses = monthEarnings.breakdown
-      .filter(b => b.rule_id.startsWith('saturday'))
+      .filter(b => b.rule_name.startsWith('Sábado'))
     satBonuses.forEach(b => {
       items.push({ label: b.rule_name, amount: b.amount, positive: true })
     })
 
     const holBonuses = monthEarnings.breakdown
-      .filter(b => b.rule_id.startsWith('holiday'))
+      .filter(b => b.rule_name.startsWith('Feriado'))
     holBonuses.forEach(b => {
       items.push({ label: b.rule_name, amount: b.amount, positive: true })
     })
