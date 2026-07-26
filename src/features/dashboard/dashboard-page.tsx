@@ -198,14 +198,14 @@ export function DashboardPage() {
   const financialBreakdown = useMemo(() => {
     const items: { label: string; amount: number; positive: boolean }[] = []
 
-    const base = 820
+    const base = 870
     const absenceTotal = absenceDaysMonth * 80
     const baseNet = base - absenceTotal
 
     items.push({ label: 'Salário Base', amount: baseNet, positive: true })
 
     const mealDays = workedDaysMonth
-    const mealTotal = mealDays * 4.50
+    const mealTotal = mealDays * 4.27
     if (mealTotal > 0) items.push({ label: 'Subsídio Alimentação', amount: mealTotal, positive: true })
 
     items.push({ label: 'Duodécimos', amount: 150, positive: true })
@@ -329,7 +329,7 @@ export function DashboardPage() {
           <Button
             variant="outline"
             className="h-auto py-3 sm:py-4 flex flex-col items-center gap-1.5 hover:bg-green-50 dark:hover:bg-green-900/10 hover:border-green-300 dark:hover:border-green-700"
-            onClick={() => navigate('/weeks')}
+            onClick={() => navigate('/calendar')}
           >
             <Zap className="w-5 h-5 text-green-600 dark:text-green-400" />
             <span className="text-xs font-medium">Registar Hoje</span>
@@ -337,7 +337,7 @@ export function DashboardPage() {
           <Button
             variant="outline"
             className="h-auto py-3 sm:py-4 flex flex-col items-center gap-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/10 hover:border-blue-300 dark:hover:border-blue-700"
-            onClick={() => navigate('/weeks')}
+            onClick={() => navigate('/calendar')}
           >
             <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             <span className="text-xs font-medium">Semana Padrão</span>
@@ -345,7 +345,7 @@ export function DashboardPage() {
           <Button
             variant="outline"
             className="h-auto py-3 sm:py-4 flex flex-col items-center gap-1.5 hover:bg-yellow-50 dark:hover:bg-yellow-900/10 hover:border-yellow-300 dark:hover:border-yellow-700"
-            onClick={() => navigate('/weeks')}
+            onClick={() => navigate('/calendar')}
           >
             <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
             <span className="text-xs font-medium">Exceção</span>
@@ -353,7 +353,7 @@ export function DashboardPage() {
           <Button
             variant="outline"
             className="h-auto py-3 sm:py-4 flex flex-col items-center gap-1.5 hover:bg-purple-50 dark:hover:bg-purple-900/10 hover:border-purple-300 dark:hover:border-purple-700"
-            onClick={() => navigate('/weeks')}
+            onClick={() => navigate('/calendar')}
           >
             <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             <span className="text-xs font-medium">Abrir Semana</span>
@@ -377,7 +377,7 @@ export function DashboardPage() {
                   variant="link"
                   size="sm"
                   className="mt-2 p-0 h-auto text-yellow-700 dark:text-yellow-400"
-                  onClick={() => navigate('/weeks')}
+                  onClick={() => navigate('/calendar')}
                 >
                   Ir para semanas <ChevronRight className="w-3 h-3 ml-1" />
                 </Button>
@@ -402,7 +402,7 @@ export function DashboardPage() {
         <motion.div variants={item}>
           <div
             className="flex items-center justify-between p-3 rounded-xl border border-border bg-card cursor-pointer hover:bg-muted/50 transition-colors"
-            onClick={() => navigate('/weeks')}
+            onClick={() => navigate('/calendar')}
           >
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-center gap-1 min-w-[40px]">

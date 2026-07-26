@@ -11,8 +11,8 @@ export interface Settings {
   fourteenth_month?: boolean
 }
 
-const BASE_SALARY = 820
-const MEAL_VOUCHER = 4.50
+const BASE_SALARY = 870
+const MEAL_VOUCHER = 4.27
 const DUODECIMOS = 150
 
 export interface CalculationResult {
@@ -335,7 +335,7 @@ export function calculateMonthEarnings(
     amount: baseAfterAbsences,
     applied: true,
     reason: absences > 0
-      ? `820€ - ${absences} falta(s) × 80€`
+      ? `${BASE_SALARY}€ - ${absences} falta(s) × 80€`
       : 'Salário Base fixo',
   })
   total += baseAfterAbsences
