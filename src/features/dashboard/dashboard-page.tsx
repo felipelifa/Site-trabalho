@@ -15,6 +15,7 @@ import {
   X,
   Clock,
   Target,
+  Download,
 } from 'lucide-react'
 import { format, startOfWeek, endOfWeek, addMonths, subMonths } from 'date-fns'
 import { pt } from 'date-fns/locale'
@@ -54,10 +55,32 @@ export function DashboardPage() {
   const ensureCompetency = useEnsureCompetency()
 
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [isInstallable, setIsInstallable] = useState(false)
 
   useEffect(() => {
     ensureCompetency.mutate()
   }, [])
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setIsInstallable(true)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      setIsInstallable(false)
+      setDeferredPrompt(null)
+    }
+  }
 
   const displayWeek = useMemo(() => {
     if (allWeeks.length > 0) return allWeeks[0]
@@ -598,6 +621,22 @@ export function DashboardPage() {
               </CardContent>
             </Card>
           </motion.div>
+
+          {isInstallable && (
+            <motion.div variants={item}>
+              <Card className="border-green-500/30 bg-green-500/5">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Download className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-foreground">Instalar App</span>
+                  </div>
+                  <Button size="sm" onClick={handleInstall} className="bg-green-600 hover:bg-green-700 text-white">
+                    Instalar
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
         </div>
       </div>
     </motion.div>
