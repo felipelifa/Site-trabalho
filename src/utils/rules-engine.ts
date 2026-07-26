@@ -1,5 +1,5 @@
 import type { Database } from '@/types/database'
-import { isSaturday, isNationalHoliday } from '@/utils/holidays'
+import { isSaturday } from '@/utils/holidays'
 
 type SalaryRule = Database['public']['Tables']['salary_rules']['Row']
 type WorkDay = Database['public']['Tables']['work_days']['Row']
@@ -31,19 +31,6 @@ export interface DayCalculation {
   total: number
   meal_deducted: boolean
   applied_rules: string[]
-}
-
-function getWorkingDaysInMonth(year: number, month: number): number {
-  let count = 0
-  const daysInMonth = new Date(year, month, 0).getDate()
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date = new Date(year, month - 1, d)
-    const dow = date.getDay()
-    if (dow >= 1 && dow <= 5 && !isNationalHoliday(date)) {
-      count++
-    }
-  }
-  return count
 }
 
 const DEFAULT_RULES: Omit<SalaryRule, 'id' | 'user_id' | 'created_at' | 'updated_at'>[] = [
@@ -203,12 +190,8 @@ export function calculateDayEarnings(
 ): DayCalculation {
   let total = 0
   const appliedRules: string[] = []
-  let mealDeducted = false
 
   const isSat = isSaturday(date)
-  const isHol = workDay.is_holiday
-  const isVac = workDay.is_vacation
-  const isAbs = workDay.is_absence
 
   if (isSat && workDay.worked) {
     const dest = workDay.destination
@@ -222,7 +205,7 @@ export function calculateDayEarnings(
     return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
   }
 
-  if (isHol && workDay.worked) {
+  if (workDay.is_holiday && workDay.worked) {
     const dest = workDay.destination
     if (dest === 'Porto') {
       total += 80
@@ -234,13 +217,13 @@ export function calculateDayEarnings(
     return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
   }
 
-  if (isVac) {
+  if (workDay.is_vacation) {
     total += 80
     appliedRules.push('vacation')
     return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
   }
 
-  if (isAbs) {
+  if (workDay.is_absence) {
     const sortedRules = [...rules].filter(r => r.active && r.is_absence).sort((a, b) => b.priority - a.priority)
     for (const rule of sortedRules) {
       if (rule.condition_value === 'monday' && workDay.day_of_week === 1) {
@@ -257,8 +240,7 @@ export function calculateDayEarnings(
         break
       }
     }
-    mealDeducted = true
-    return { date: workDay.date, total, meal_deducted: mealDeducted, applied_rules: appliedRules }
+    return { date: workDay.date, total, meal_deducted: true, applied_rules: appliedRules }
   }
 
   return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
@@ -320,33 +302,28 @@ export function calculateWeekEarnings(
 export function calculateMonthEarnings(
   workDays: WorkDay[],
   rules: SalaryRule[],
-  _settings?: Settings,
-  year?: number,
-  month?: number
+  _settings?: Settings
 ): CalculationResult {
   let total = 0
   const breakdown: CalculationResult['breakdown'] = []
 
-  const effectiveYear = year ?? new Date().getFullYear()
-  const effectiveMonth = month ?? (new Date().getMonth() + 1)
-
-  const totalWorkingDays = getWorkingDaysInMonth(effectiveYear, effectiveMonth)
-  const workedDays = workDays.filter(d => d.worked).length
-
-  const baseSalary = totalWorkingDays > 0
-    ? Math.round((BASE_SALARY / totalWorkingDays) * workedDays * 100) / 100
-    : 0
-
-  if (baseSalary > 0) {
-    breakdown.push({
-      rule_id: 'base',
-      rule_name: 'Salário Base',
-      amount: baseSalary,
-      applied: true,
-      reason: `${BASE_SALARY}€ / ${totalWorkingDays} dias × ${workedDays} dias trabalhados`,
-    })
-    total += baseSalary
+  let absences = 0
+  for (const workDay of workDays) {
+    if (workDay.is_absence) absences++
   }
+
+  const baseAfterAbsences = BASE_SALARY - (absences * 80)
+
+  breakdown.push({
+    rule_id: 'base',
+    rule_name: 'Salário Base',
+    amount: baseAfterAbsences,
+    applied: true,
+    reason: absences > 0
+      ? `820€ - ${absences} falta(s) × 80€`
+      : 'Salário Base fixo',
+  })
+  total += baseAfterAbsences
 
   breakdown.push({
     rule_id: 'duodecimos',

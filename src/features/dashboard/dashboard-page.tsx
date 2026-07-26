@@ -81,7 +81,7 @@ export function DashboardPage() {
 
   const monthEarnings = useMemo(() => {
     if (!monthWorkDays.length) return { total: 0, breakdown: [] }
-    return calculateMonthEarnings(monthWorkDays, rules, settings ?? undefined, currentYear, currentMonth)
+    return calculateMonthEarnings(monthWorkDays, rules, settings ?? undefined)
   }, [monthWorkDays, rules, settings])
 
   const daysWorked = workDays.filter(d => d.worked).length
