@@ -531,19 +531,22 @@ export function CalendarPage() {
             </Button>
             <div className="text-center min-w-[140px]">
               <p className="text-sm font-bold text-foreground capitalize">{format(currentDate, "MMMM", { locale: pt })}</p>
-              <p className={`text-[10px] font-medium ${
-                isToday(startOfMonth(currentDate))
-                  ? 'text-green-600 dark:text-green-400'
-                  : currentDate < new Date()
-                    ? 'text-muted-foreground'
-                    : 'text-primary'
-              }`}>
-                {isToday(startOfMonth(currentDate))
-                  ? 'Mês Atual'
-                  : currentDate < new Date()
-                    ? 'Mês Passado'
-                    : 'Próximo Mês'}
-              </p>
+              {(() => {
+                const now = new Date()
+                const isCurrentMonth = currentDate.getMonth() === now.getMonth() && currentDate.getFullYear() === now.getFullYear()
+                const isPast = currentDate < new Date(now.getFullYear(), now.getMonth(), 1)
+                return (
+                  <p className={`text-[10px] font-medium ${
+                    isCurrentMonth
+                      ? 'text-green-600 dark:text-green-400'
+                      : isPast
+                        ? 'text-muted-foreground'
+                        : 'text-primary'
+                  }`}>
+                    {isCurrentMonth ? 'Mês Atual' : isPast ? 'Mês Passado' : 'Próximo Mês'}
+                  </p>
+                )
+              })()}
             </div>
             <Button variant="outline" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
               <ChevronRight className="w-4 h-4" />
