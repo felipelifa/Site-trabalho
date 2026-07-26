@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, addDays, subDays } from 'date-fns'
 import { pt } from 'date-fns/locale'
-import { Plus, Trash2, ChevronLeft, ChevronRight, Check, Edit2 } from 'lucide-react'
+import { Plus, Trash2, ChevronLeft, ChevronRight, Check, Edit2, CheckCheck, Trash } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -58,6 +58,20 @@ export function ChecklistsPage() {
     await deleteItem.mutateAsync(id)
   }
 
+  const handleMarkAllDone = async () => {
+    const pending = items.filter(i => !i.completed)
+    for (const item of pending) {
+      await updateItem.mutateAsync({ id: item.id, completed: true })
+    }
+  }
+
+  const handleClearCompleted = async () => {
+    const completed = items.filter(i => i.completed)
+    for (const item of completed) {
+      await deleteItem.mutateAsync(item.id)
+    }
+  }
+
   const navigateDay = (direction: 'prev' | 'next') => {
     const date = new Date(selectedDate)
     const newDate = direction === 'prev' ? subDays(date, 1) : addDays(date, 1)
@@ -68,6 +82,7 @@ export function ChecklistsPage() {
   const totalCount = items.length
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
   const isToday = format(new Date(), 'yyyy-MM-dd') === selectedDate
+  const hasCompleted = completedCount > 0
 
   const filteredItems = items.filter(i => {
     if (filter === 'pending') return !i.completed
@@ -115,7 +130,7 @@ export function ChecklistsPage() {
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <motion.div
-                    className="bg-primary h-2 rounded-full"
+                    className={`h-2 rounded-full ${progress === 100 ? 'bg-green-500' : 'bg-primary'}`}
                     initial={{ width: 0 }}
                     animate={{ width: `${progress}%` }}
                     transition={{ duration: 0.3 }}
@@ -136,25 +151,25 @@ export function ChecklistsPage() {
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
+
+            {totalCount > 0 && (
+              <div className="flex gap-1">
+                {(['all', 'pending', 'done'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
+                      filter === f ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                  >
+                    {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendentes' : 'Concluídos'}
+                  </button>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>
-
-      {totalCount > 0 && (
-        <motion.div variants={item} className="flex gap-1">
-          {(['all', 'pending', 'done'] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                filter === f ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendentes' : 'Concluídos'}
-            </button>
-          ))}
-        </motion.div>
-      )}
 
       <motion.div variants={item} className="space-y-2">
         <AnimatePresence>
@@ -167,7 +182,10 @@ export function ChecklistsPage() {
                       <Input
                         value={editText}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditText(e.target.value)}
-                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleUpdate(listItem.id)}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          if (e.key === 'Enter') handleUpdate(listItem.id)
+                          if (e.key === 'Escape') setEditingId(null)
+                        }}
                         className="flex-1"
                         autoFocus
                       />
@@ -181,14 +199,14 @@ export function ChecklistsPage() {
                         onCheckedChange={() => handleToggle(listItem.id, listItem.completed)}
                       />
                       <div
-                        className="flex-1 cursor-pointer"
+                        className="flex-1 cursor-pointer min-w-0"
                         onClick={() => { setEditingId(listItem.id); setEditText(listItem.item) }}
                       >
                         <span className={`text-sm ${listItem.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                           {listItem.item}
                         </span>
                       </div>
-                      <div className="flex gap-0.5">
+                      <div className="flex gap-0.5 shrink-0">
                         <Button size="icon" variant="ghost" className="h-7 w-7"
                           onClick={() => { setEditingId(listItem.id); setEditText(listItem.item) }}>
                           <Edit2 className="w-3 h-3" />
@@ -215,13 +233,30 @@ export function ChecklistsPage() {
         )}
       </motion.div>
 
-      {completedCount > 0 && totalCount > 0 && (
+      {totalCount > 0 && (
+        <motion.div variants={item} className="flex gap-2">
+          {hasCompleted && (
+            <Button variant="outline" size="sm" onClick={handleClearCompleted} className="flex-1">
+              <Trash className="w-3.5 h-3.5 mr-1.5" />
+              Limpar Concluídas ({completedCount})
+            </Button>
+          )}
+          {completedCount < totalCount && (
+            <Button variant="outline" size="sm" onClick={handleMarkAllDone} className="flex-1">
+              <CheckCheck className="w-3.5 h-3.5 mr-1.5" />
+              Concluir Todas
+            </Button>
+          )}
+        </motion.div>
+      )}
+
+      {progress === 100 && totalCount > 0 && (
         <motion.div variants={item}>
           <Card className="bg-green-500/5 border-green-500/20">
             <CardContent className="p-3 flex items-center gap-2">
               <Check className="w-4 h-4 text-green-500" />
               <span className="text-sm text-green-600 dark:text-green-400">
-                {completedCount} de {totalCount} tarefas concluídas
+                Todas as {totalCount} tarefas concluídas!
               </span>
             </CardContent>
           </Card>

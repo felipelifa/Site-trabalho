@@ -100,6 +100,15 @@ export function useWorkDaysByMonth(year: number, month: number) {
   })
 }
 
+export function useWorkDaysByYear(year: number) {
+  const { user } = useAuthContext()
+  return useQuery({
+    queryKey: ['work-days-year', user?.id, year],
+    queryFn: () => workDaysService.getByYear(user!.id, year),
+    enabled: !!user,
+  })
+}
+
 export function usePayments() {
   const { user } = useAuthContext()
   return useQuery({

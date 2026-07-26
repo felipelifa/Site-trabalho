@@ -2,7 +2,7 @@ import { useState, useMemo, type ChangeEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, isPast, isToday, differenceInDays } from 'date-fns'
 import { pt } from 'date-fns/locale'
-import { Plus, Trash2, Bell, Check, AlertTriangle, Clock, ChevronDown, ChevronUp, Edit2 } from 'lucide-react'
+import { Plus, Trash2, Bell, Check, AlertTriangle, Clock, ChevronDown, ChevronUp, Edit2, Filter } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,18 +28,23 @@ const item = {
   show: { opacity: 1, y: 0 },
 }
 
+const CATEGORIES = ['Trabalho', 'Pessoal', 'Financeiro', 'Saúde', 'Família', 'Casa', 'Outro']
+
 export function RemindersPage() {
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium')
+  const [category, setCategory] = useState('')
   const [sortBy, setSortBy] = useState<'date' | 'priority'>('date')
+  const [filterCategory, setFilterCategory] = useState<string>('all')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editDueDate, setEditDueDate] = useState('')
   const [editPriority, setEditPriority] = useState<'low' | 'medium' | 'high'>('medium')
+  const [editCategory, setEditCategory] = useState('')
   const [showCompleted, setShowCompleted] = useState(false)
 
   const { data: reminders = [] } = useReminders()
@@ -54,12 +59,14 @@ export function RemindersPage() {
       description,
       due_date: dueDate,
       priority,
+      category: category || undefined,
       completed: false,
     })
     setTitle('')
     setDescription('')
     setDueDate(format(new Date(), 'yyyy-MM-dd'))
     setPriority('medium')
+    setCategory('')
     setShowForm(false)
   }
 
@@ -75,6 +82,7 @@ export function RemindersPage() {
       description: editDescription,
       due_date: editDueDate,
       priority: editPriority,
+      category: editCategory || undefined,
     })
     setEditingId(null)
   }
@@ -101,6 +109,18 @@ export function RemindersPage() {
     }
   }
 
+  const getCategoryColor = (cat?: string) => {
+    switch (cat) {
+      case 'Trabalho': return 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+      case 'Pessoal': return 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+      case 'Financeiro': return 'bg-green-500/10 text-green-600 dark:text-green-400'
+      case 'Saúde': return 'bg-red-500/10 text-red-600 dark:text-red-400'
+      case 'Família': return 'bg-pink-500/10 text-pink-600 dark:text-pink-400'
+      case 'Casa': return 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
+      default: return 'bg-muted text-muted-foreground'
+    }
+  }
+
   const getDueDateInfo = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00')
     if (isToday(date)) return { label: 'Hoje', color: 'text-blue-600 dark:text-blue-400', urgent: true }
@@ -115,15 +135,24 @@ export function RemindersPage() {
 
   const priorityOrder = { high: 0, medium: 1, low: 2 }
 
+  const availableCategories = useMemo(() => {
+    const cats = new Set<string>()
+    reminders.forEach(r => { if (r.category) cats.add(r.category) })
+    return Array.from(cats).sort()
+  }, [reminders])
+
   const pendingReminders = useMemo(() => {
-    const pending = reminders.filter(r => !r.completed)
+    let pending = reminders.filter(r => !r.completed)
+    if (filterCategory !== 'all') {
+      pending = pending.filter(r => r.category === filterCategory)
+    }
     return pending.sort((a, b) => {
       if (sortBy === 'priority') {
         return (priorityOrder[a.priority] || 1) - (priorityOrder[b.priority] || 1)
       }
       return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
     })
-  }, [reminders, sortBy])
+  }, [reminders, sortBy, filterCategory])
 
   const completedReminders = useMemo(() => {
     return reminders.filter(r => r.completed).sort((a, b) =>
@@ -131,7 +160,10 @@ export function RemindersPage() {
     )
   }, [reminders])
 
-  const overdueCount = pendingReminders.filter(r => isPast(new Date(r.due_date + 'T00:00:00')) && !isToday(new Date(r.due_date + 'T00:00:00'))).length
+  const overdueCount = pendingReminders.filter(r => {
+    const date = new Date(r.due_date + 'T00:00:00')
+    return isPast(date) && !isToday(date)
+  }).length
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-4 lg:space-y-6">
@@ -153,7 +185,7 @@ export function RemindersPage() {
               <CardContent className="p-4 space-y-3">
                 <Input placeholder="Título do lembrete" value={title} onChange={(e: ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)} />
                 <Textarea placeholder="Descrição (opcional)" value={description} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)} className="min-h-[60px]" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs text-muted-foreground">Data</label>
                     <Input type="date" value={dueDate} onChange={(e: ChangeEvent<HTMLInputElement>) => setDueDate(e.target.value)} />
@@ -169,6 +201,18 @@ export function RemindersPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Categoria</label>
+                    <Select value={category} onValueChange={(v) => setCategory(v || '')}>
+                      <SelectTrigger><SelectValue placeholder="Sem categoria" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Sem categoria</SelectItem>
+                        {CATEGORIES.map(c => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={handleCreate} disabled={!title.trim()} className="flex-1 sm:flex-none">Criar</Button>
@@ -180,7 +224,7 @@ export function RemindersPage() {
         )}
       </AnimatePresence>
 
-      <motion.div variants={item} className="flex items-center gap-2">
+      <motion.div variants={item} className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-muted-foreground">Ordenar:</span>
         <button onClick={() => setSortBy('date')} className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all ${sortBy === 'date' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
           <Clock className="w-3 h-3 inline mr-1" />Data
@@ -188,6 +232,19 @@ export function RemindersPage() {
         <button onClick={() => setSortBy('priority')} className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all ${sortBy === 'priority' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
           <AlertTriangle className="w-3 h-3 inline mr-1" />Prioridade
         </button>
+        {availableCategories.length > 0 && (
+          <>
+            <span className="text-xs text-muted-foreground ml-2">Filtrar:</span>
+            <button onClick={() => setFilterCategory('all')} className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all ${filterCategory === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+              Todos
+            </button>
+            {availableCategories.map(cat => (
+              <button key={cat} onClick={() => setFilterCategory(cat)} className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all ${filterCategory === cat ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                {cat}
+              </button>
+            ))}
+          </>
+        )}
       </motion.div>
 
       <motion.div variants={item}>
@@ -212,7 +269,7 @@ export function RemindersPage() {
                         <CardContent className="p-3 space-y-2">
                           <Input value={editTitle} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditTitle(e.target.value)} placeholder="Título" />
                           <Textarea value={editDescription} onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setEditDescription(e.target.value)} placeholder="Descrição" className="min-h-[50px]" />
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                             <Input type="date" value={editDueDate} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditDueDate(e.target.value)} />
                             <Select value={editPriority} onValueChange={(v) => { if (v) setEditPriority(v as 'low' | 'medium' | 'high') }}>
                               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -220,6 +277,15 @@ export function RemindersPage() {
                                 <SelectItem value="low">Baixa</SelectItem>
                                 <SelectItem value="medium">Média</SelectItem>
                                 <SelectItem value="high">Alta</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Select value={editCategory} onValueChange={(v) => setEditCategory(v || '')}>
+                              <SelectTrigger><SelectValue placeholder="Sem cat." /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">Sem cat.</SelectItem>
+                                {CATEGORIES.map(c => (
+                                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -244,11 +310,23 @@ export function RemindersPage() {
                             <Badge variant="secondary" className={`text-[10px] ${getPriorityColor(reminder.priority)}`}>
                               {getPriorityLabel(reminder.priority)}
                             </Badge>
+                            {reminder.category && (
+                              <Badge variant="secondary" className={`text-[10px] ${getCategoryColor(reminder.category)}`}>
+                                {reminder.category}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-0.5 shrink-0">
                           <Button size="icon" variant="ghost" className="h-7 w-7"
-                            onClick={() => { setEditingId(reminder.id); setEditTitle(reminder.title); setEditDescription(reminder.description || ''); setEditDueDate(reminder.due_date); setEditPriority(reminder.priority as 'low' | 'medium' | 'high') }}>
+                            onClick={() => {
+                              setEditingId(reminder.id)
+                              setEditTitle(reminder.title)
+                              setEditDescription(reminder.description || '')
+                              setEditDueDate(reminder.due_date)
+                              setEditPriority(reminder.priority as 'low' | 'medium' | 'high')
+                              setEditCategory(reminder.category || '')
+                            }}>
                             <Edit2 className="w-3 h-3" />
                           </Button>
                           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(reminder.id)}>
@@ -263,7 +341,9 @@ export function RemindersPage() {
             </AnimatePresence>
 
             {pendingReminders.length === 0 && (
-              <p className="text-center text-muted-foreground text-sm py-4">Nenhum lembrete pendente</p>
+              <p className="text-center text-muted-foreground text-sm py-4">
+                {filterCategory !== 'all' ? `Nenhum lembrete em "${filterCategory}"` : 'Nenhum lembrete pendente'}
+              </p>
             )}
           </CardContent>
         </Card>
@@ -287,9 +367,16 @@ export function RemindersPage() {
                         </Button>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-foreground line-through text-sm">{reminder.title}</p>
-                          <span className="text-[10px] text-muted-foreground">
-                            {format(new Date(reminder.due_date + 'T00:00:00'), "d 'de' MMM", { locale: pt })}
-                          </span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-muted-foreground">
+                              {format(new Date(reminder.due_date + 'T00:00:00'), "d 'de' MMM", { locale: pt })}
+                            </span>
+                            {reminder.category && (
+                              <Badge variant="secondary" className={`text-[10px] ${getCategoryColor(reminder.category)}`}>
+                                {reminder.category}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => handleDelete(reminder.id)}>
                           <Trash2 className="w-3 h-3" />

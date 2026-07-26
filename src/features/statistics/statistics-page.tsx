@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
-import { ChevronLeft, ChevronRight, DollarSign, TrendingUp, TrendingDown, MapPin, Calendar } from 'lucide-react'
+import { ChevronLeft, ChevronRight, DollarSign, TrendingUp, TrendingDown, MapPin, Calendar, Target, Clock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useWorkWeeks } from '@/hooks/use-queries'
+import { useWorkWeeks, useWorkDaysByYear, useSalaryRules } from '@/hooks/use-queries'
+import { calculateMonthEarnings } from '@/utils/rules-engine'
 
 const container = {
   hidden: { opacity: 0 },
@@ -28,6 +29,9 @@ export function StatisticsPage() {
   const currentYear = new Date().getFullYear()
   const [selectedYear, setSelectedYear] = useState(currentYear)
 
+  const { data: yearWorkDays = [] } = useWorkDaysByYear(selectedYear)
+  const { data: rules = [] } = useSalaryRules()
+
   const yearWeeks = useMemo(() => {
     return workWeeks.filter(w => new Date(w.start_date).getFullYear() === selectedYear)
   }, [workWeeks, selectedYear])
@@ -35,43 +39,78 @@ export function StatisticsPage() {
   const monthlyData = useMemo(() => {
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
     return months.map((month, index) => {
+      const monthNum = index + 1
+      const monthWorkDays = yearWorkDays.filter(d => {
+        const date = new Date(d.date)
+        return date.getMonth() + 1 === monthNum
+      })
       const monthWeeks = yearWeeks.filter(w => new Date(w.start_date).getMonth() === index)
-      const totalEarned = monthWeeks.reduce((sum, w) => sum + (w.total_earned || 0), 0)
-      return { name: month, valor: totalEarned, semanas: monthWeeks.length }
+      const calc = monthWorkDays.length > 0
+        ? calculateMonthEarnings(monthWorkDays, rules)
+        : { total: 0, breakdown: [] }
+      return {
+        name: month,
+        valor: calc.total,
+        semanas: monthWeeks.length,
+        dias: monthWorkDays.filter(d => d.worked).length,
+      }
     })
-  }, [yearWeeks])
+  }, [yearWorkDays, yearWeeks, rules])
 
   const cityData = useMemo(() => {
-    const cities: Record<string, number> = {}
+    const cities: Record<string, { weeks: number; earned: number; days: number }> = {}
     yearWeeks.forEach(week => {
       const city = week.destination || 'Não definido'
-      cities[city] = (cities[city] || 0) + 1
-    })
-    return Object.entries(cities).map(([name, value]) => ({ name, value }))
-  }, [yearWeeks])
-
-  const citySummary = useMemo(() => {
-    const cities: Record<string, { weeks: number; earned: number }> = {}
-    yearWeeks.forEach(week => {
-      const city = week.destination || 'Não definido'
-      if (!cities[city]) cities[city] = { weeks: 0, earned: 0 }
+      if (!cities[city]) cities[city] = { weeks: 0, earned: 0, days: 0 }
       cities[city].weeks++
-      cities[city].earned += week.total_earned || 0
+    })
+    yearWorkDays.forEach(day => {
+      const city = day.destination || 'Não definido'
+      if (cities[city]) {
+        if (day.worked) cities[city].days++
+      }
+    })
+    Object.keys(cities).forEach(city => {
+      const cityDays = yearWorkDays.filter(d => d.destination === city && d.worked)
+      const calc = cityDays.length > 0 ? calculateMonthEarnings(cityDays, rules) : { total: 0 }
+      cities[city].earned = calc.total
     })
     return Object.entries(cities).map(([name, data]) => ({
-      name, weeks: data.weeks, earned: data.earned,
+      name, ...data,
     }))
-  }, [yearWeeks])
+  }, [yearWeeks, yearWorkDays, rules])
 
   const stats = useMemo(() => {
-    const totalEarned = yearWeeks.reduce((sum, w) => sum + (w.total_earned || 0), 0)
+    const calc = yearWorkDays.length > 0
+      ? calculateMonthEarnings(yearWorkDays, rules)
+      : { total: 0, breakdown: [] }
+    const totalEarned = calc.total
     const totalWeeks = yearWeeks.length
     const averagePerWeek = totalWeeks > 0 ? totalEarned / totalWeeks : 0
-    const maxWeek = yearWeeks.reduce((max, w) => (w.total_earned || 0) > (max.total_earned || 0) ? w : max, yearWeeks[0])
+
+    const workedDays = yearWorkDays.filter(d => d.worked).length
+    const saturdays = yearWorkDays.filter(d => {
+      const date = new Date(d.date)
+      return date.getDay() === 6 && d.worked
+    }).length
+    const absences = yearWorkDays.filter(d => d.is_absence).length
+    const vacations = yearWorkDays.filter(d => d.is_vacation).length
+    const holidays = yearWorkDays.filter(d => {
+      const date = new Date(d.date)
+      return (date.getDay() === 0 || date.getDay() === 6) && d.worked
+    }).length
+
+    const maxWeek = yearWeeks.length > 0
+      ? yearWeeks.reduce((max, w) => (w.total_earned || 0) > (max.total_earned || 0) ? w : max, yearWeeks[0])
+      : null
     const maxEarned = maxWeek ? (maxWeek.total_earned || 0) : 0
 
-    return { totalEarned, totalWeeks, averagePerWeek, maxEarned }
-  }, [yearWeeks])
+    return {
+      totalEarned, totalWeeks, averagePerWeek, maxEarned,
+      workedDays, saturdays, absences, vacations,
+      breakdown: calc.breakdown,
+    }
+  }, [yearWorkDays, yearWeeks, rules])
 
   const yearlyComparison = useMemo(() => {
     const prevYear = selectedYear - 1
@@ -96,7 +135,7 @@ export function StatisticsPage() {
       <motion.div variants={item} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Estatísticas</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Analise seu desempenho financeiro</p>
+          <p className="text-sm md:text-base text-muted-foreground">Análise financeira em tempo real</p>
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
           <Button variant="outline" size="icon" onClick={() => setSelectedYear(y => y - 1)}>
@@ -139,10 +178,10 @@ export function StatisticsPage() {
         <Card>
           <CardContent className="p-3 md:p-4">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="w-4 h-4 text-green-500" />
-              <span className="text-xs text-muted-foreground">Melhor Semana</span>
+              <Target className="w-4 h-4 text-green-500" />
+              <span className="text-xs text-muted-foreground">Dias Trabalhados</span>
             </div>
-            <p className="text-lg md:text-2xl font-bold text-foreground">{formatEuro(stats.maxEarned)}</p>
+            <p className="text-lg md:text-2xl font-bold text-green-600 dark:text-green-400">{stats.workedDays}</p>
           </CardContent>
         </Card>
         <Card>
@@ -156,17 +195,23 @@ export function StatisticsPage() {
         </Card>
       </motion.div>
 
-      <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
+      <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
         <Card>
           <CardContent className="p-3 md:p-4">
-            <span className="text-xs text-muted-foreground">Semanas com Destino</span>
-            <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{yearWeeks.filter(w => w.destination).length}</p>
+            <span className="text-xs text-muted-foreground">Sábados</span>
+            <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{stats.saturdays}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 md:p-4">
-            <span className="text-xs text-muted-foreground">Maior Ganho Semanal</span>
-            <p className="text-lg font-bold text-green-600 dark:text-green-400">{formatEuro(stats.maxEarned)}</p>
+            <span className="text-xs text-muted-foreground">Faltas</span>
+            <p className="text-lg font-bold text-red-600 dark:text-red-400">{stats.absences}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3 md:p-4">
+            <span className="text-xs text-muted-foreground">Férias</span>
+            <p className="text-lg font-bold text-yellow-600 dark:text-yellow-400">{stats.vacations}</p>
           </CardContent>
         </Card>
         {monthlyComparison && (
@@ -175,7 +220,7 @@ export function StatisticsPage() {
               <span className="text-xs text-muted-foreground">Este Mês vs Anterior</span>
               <div className="flex items-center gap-1 mt-1">
                 {monthlyComparison.positive ? <TrendingUp className="w-4 h-4 text-green-500" /> : <TrendingDown className="w-4 h-4 text-red-500" />}
-                <span className={`text-lg font-bold ${monthlyComparison.positive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span className={`text-base font-bold ${monthlyComparison.positive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {monthlyComparison.positive ? '+' : ''}{formatEuro(monthlyComparison.diff)}
                 </span>
               </div>
@@ -191,7 +236,7 @@ export function StatisticsPage() {
               <TabsTrigger value="monthly">Mensal</TabsTrigger>
               <TabsTrigger value="cities">Cidades</TabsTrigger>
               <TabsTrigger value="trends">Tendências</TabsTrigger>
-              <TabsTrigger value="detail">Detalhes</TabsTrigger>
+              <TabsTrigger value="breakdown">Composição</TabsTrigger>
             </TabsList>
           </div>
 
@@ -210,7 +255,10 @@ export function StatisticsPage() {
                           border: '1px solid hsl(var(--border))',
                           borderRadius: '8px',
                         }}
-                        formatter={(value, _name, props) => [formatEuro(Number(value)), `${props.payload.semanas} semanas`]}
+                        formatter={(value, _name, props) => [
+                          formatEuro(Number(value)),
+                          `${props.payload.semanas} sem, ${props.payload.dias} dias`
+                        ]}
                       />
                       <Bar dataKey="valor" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -228,7 +276,7 @@ export function StatisticsPage() {
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={cityData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
+                        <Pie data={cityData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="earned">
                           {cityData.map((_entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
@@ -239,6 +287,7 @@ export function StatisticsPage() {
                             border: '1px solid hsl(var(--border))',
                             borderRadius: '8px',
                           }}
+                          formatter={(value) => [formatEuro(Number(value)), 'Ganho']}
                         />
                       </PieChart>
                     </ResponsiveContainer>
@@ -247,7 +296,7 @@ export function StatisticsPage() {
                     {cityData.map((entry, index) => (
                       <div key={entry.name} className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                        <span className="text-xs text-muted-foreground">{entry.name} ({entry.value})</span>
+                        <span className="text-xs text-muted-foreground">{entry.name} ({entry.weeks} sem)</span>
                       </div>
                     ))}
                   </div>
@@ -257,22 +306,22 @@ export function StatisticsPage() {
               <Card>
                 <CardContent className="p-4 space-y-3">
                   <p className="text-sm font-medium text-foreground">Resumo por Cidade</p>
-                  {citySummary.map((city) => (
+                  {cityData.map((city) => (
                     <div key={city.name} className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-foreground">{city.name}</span>
                         <span className="text-sm font-medium text-foreground">{formatEuro(city.earned)}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">{city.weeks} semanas</span>
+                        <span className="text-xs text-muted-foreground">{city.weeks} semanas · {city.days} dias</span>
                         <span className="text-xs text-muted-foreground">
-                          {city.weeks > 0 ? formatEuro(city.earned / city.weeks) : '€0'}/sem
+                          {city.days > 0 ? formatEuro(city.earned / city.days) : '€0'}/dia
                         </span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-1.5">
                         <div
                           className={`h-1.5 rounded-full ${city.name === 'Porto' ? 'bg-green-500' : city.name === 'Lisboa' ? 'bg-blue-500' : 'bg-purple-500'}`}
-                          style={{ width: `${(city.earned / Math.max(...citySummary.map(c => c.earned))) * 100}%` }}
+                          style={{ width: `${(city.earned / Math.max(...cityData.map(c => c.earned))) * 100}%` }}
                         />
                       </div>
                     </div>
@@ -311,39 +360,67 @@ export function StatisticsPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="detail">
-            <Card>
-              <CardContent className="p-4 space-y-3">
-                <p className="text-sm font-medium text-foreground">Resumo Anual {selectedYear}</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: 'Semanas Totais', value: stats.totalWeeks, color: 'text-foreground' },
-                    { label: 'Ganho Total', value: formatEuro(stats.totalEarned), color: 'text-foreground' },
-                    { label: 'Média Semanal', value: formatEuro(stats.averagePerWeek), color: 'text-foreground' },
-                    { label: 'Melhor Semana', value: formatEuro(stats.maxEarned), color: 'text-green-600 dark:text-green-400' },
-                  ].map((stat, i) => (
-                    <div key={i} className="p-3 bg-muted/50 rounded-lg">
-                      <span className="text-xs text-muted-foreground">{stat.label}</span>
-                      <p className={`text-base font-bold ${stat.color}`}>{stat.value}</p>
+          <TabsContent value="breakdown">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <p className="text-sm font-medium text-foreground">Composição do Salário</p>
+                  {stats.breakdown.length > 0 ? (
+                    stats.breakdown.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
+                        <div className="flex-1">
+                          <span className="text-sm text-foreground">{item.rule_name}</span>
+                          <p className="text-[10px] text-muted-foreground">{item.reason}</p>
+                        </div>
+                        <span className={`text-sm font-bold ${item.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {item.amount >= 0 ? '+' : ''}{formatEuro(item.amount)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">Sem dados para este ano</p>
+                  )}
+                  {stats.breakdown.length > 0 && (
+                    <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border-t border-primary/20">
+                      <span className="text-sm font-medium text-foreground">Total</span>
+                      <span className="text-lg font-bold text-foreground">{formatEuro(stats.totalEarned)}</span>
                     </div>
-                  ))}
-                </div>
-                {yearlyComparison.prevTotal > 0 && (
-                  <div className="p-3 bg-muted/50 rounded-lg mt-2">
-                    <span className="text-xs text-muted-foreground">Comparação com {selectedYear - 1}</span>
-                    <div className="flex items-center gap-2 mt-1">
-                      {yearlyComparison.positive ? <TrendingUp className="w-4 h-4 text-green-500" /> : <TrendingDown className="w-4 h-4 text-red-500" />}
-                      <span className={`text-sm font-medium ${yearlyComparison.positive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {yearlyComparison.positive ? '+' : ''}{formatEuro(yearlyComparison.diff)} ({yearlyComparison.pct}%)
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {selectedYear - 1}: {formatEuro(yearlyComparison.prevTotal)} → {selectedYear}: {formatEuro(stats.totalEarned)}
-                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <p className="text-sm font-medium text-foreground">Resumo Anual {selectedYear}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: 'Semanas', value: stats.totalWeeks, color: 'text-foreground' },
+                      { label: 'Dias Trabalhados', value: stats.workedDays, color: 'text-green-600 dark:text-green-400' },
+                      { label: 'Sábados', value: stats.saturdays, color: 'text-orange-600 dark:text-orange-400' },
+                      { label: 'Faltas', value: stats.absences, color: 'text-red-600 dark:text-red-400' },
+                      { label: 'Férias', value: stats.vacations, color: 'text-yellow-600 dark:text-yellow-400' },
+                      { label: 'Média/Semana', value: formatEuro(stats.averagePerWeek), color: 'text-foreground' },
+                    ].map((stat, i) => (
+                      <div key={i} className="p-2.5 bg-muted/50 rounded-lg">
+                        <span className="text-[10px] text-muted-foreground">{stat.label}</span>
+                        <p className={`text-sm font-bold ${stat.color}`}>{stat.value}</p>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  {yearlyComparison.prevTotal > 0 && (
+                    <div className="p-3 bg-muted/50 rounded-lg mt-2">
+                      <span className="text-xs text-muted-foreground">Comparação com {selectedYear - 1}</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        {yearlyComparison.positive ? <TrendingUp className="w-4 h-4 text-green-500" /> : <TrendingDown className="w-4 h-4 text-red-500" />}
+                        <span className={`text-sm font-medium ${yearlyComparison.positive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {yearlyComparison.positive ? '+' : ''}{formatEuro(yearlyComparison.diff)} ({yearlyComparison.pct}%)
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </motion.div>

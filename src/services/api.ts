@@ -224,6 +224,20 @@ export const workDaysService = {
     if (error) throw error
     return data
   },
+
+  async getByYear(userId: string, year: number) {
+    const startDate = `${year}-01-01`
+    const endDate = `${year}-12-31`
+    const { data, error } = await supabase
+      .from('work_days')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true })
+    if (error) throw error
+    return data
+  },
 }
 
 // Payments operations
