@@ -4,6 +4,8 @@ ERP pessoal de trabalho — sistema web moderno para trabalhadores portugueses.
 
 **Projeto ativo em desenvolvimento.** Build limpo, sem erros TypeScript.
 
+**Deploy:** https://site-trabalho-omega.vercel.app
+
 ---
 
 ## Stack
@@ -25,23 +27,20 @@ ERP pessoal de trabalho — sistema web moderno para trabalhadores portugueses.
 
 - **URL:** `https://crtcznclfkxqhwmmgawl.supabase.co`
 - **Projeto:** WorkFlow PT
-- **Auth:** Email/senha, Google OAuth, Magic Link (confirmacao de email DESATIVADA no dev)
+- **Auth:** Email/senha, Magic Link (confirmacao de email DESATIVADA no dev)
 
 ---
 
 ## Regras de Negocio
 
-### Valores Configuraveis
+### Valores Fixos
 
 | Item | Valor |
 |---|---|
-| Salario Base | 970€/mes |
-| Subsidio Alimentacao | 90€/mes |
-| Duodecimos (Natal + Ferias) | 150€/mes (75€ cada) |
+| Salario Base | 820€/mes (fixo, so desconta por faltas) |
+| Subsidio Alimentacao | 4,50€/dia trabalhado |
+| Duodecimos | 150€/mes |
 | Dia de Pagamento | 15 de cada mes |
-| Valor Hora | 5,31€ |
-| Jornada | 8h/dia, 40h/semana |
-| Vale Alimentacao | 4,50€/dia trabalhado |
 
 ### Regras Salariais
 
@@ -49,29 +48,21 @@ ERP pessoal de trabalho — sistema web moderno para trabalhadores portugueses.
 |---|---|---|
 | Semana Lisboa/Algarve | +140€ | Por semana trabalhada |
 | Semana Porto | +50€ | Por semana trabalhada |
-| Sabado Lisboa/Algarve | +110€ | Sabado trabalhado |
-| Sabado Porto | +80€ | Sabado trabalhado |
-| Feriado | +80€ | Dia feriado trabalhado |
+| Sabado Lisboa/Algarve | +110€ | Sabado trabalhado (sem outros bonus) |
+| Sabado Porto | +80€ | Sabado trabalhado (sem outros bonus) |
+| Feriado Lisboa/Algarve | +110€ | Dia feriado trabalhado |
+| Feriado Porto | +80€ | Dia feriado trabalhado |
 | Ferias | +80€ | Dia de ferias |
 | Falta normal | -80€ | Falta qualquer dia |
 | Falta segunda | -240€ | Falta na segunda |
 | Falta sexta | -240€ | Falta na sexta |
-| Adicional Diario Porto | +10€ | Por dia (seg-sex) |
-| Adicional Diario Lisboa/Algarve | +30€ | Por dia (seg-sex) |
-| Adicional Sexta Lisboa/Algarve | +20€ | Sexta-feira (20€ em vez de 30€) |
 
-**Ordem do calculo:**
-1. Salario Base (970€)
-2. Subsidio Alimentacao (90€)
-3. Duodecimos (150€)
-4. Trabalho Horario (8h x 5,31€ x dias trabalhados)
-5. Vale Alimentacao (4,50€ x dias trabalhados)
-6. Valor das semanas
-7. Valor dos sabados
-8. Valor dos feriados
-9. Valor das ferias
-10. Adicionais diarios
-11. Descontos por faltas
+**Calculo mensal (calculateMonthEarnings):**
+1. Salario Base (820€ - faltas x 80€)
+2. Duodecimos (150€ fixo)
+3. Bonus semanais por destino
+4. Ganhos diarios (sabados, feriados, ferias, faltas)
+5. Subsidio alimentacao (4,50€ x dias trabalhados)
 
 ---
 
@@ -82,24 +73,6 @@ O sistema trabalha por **competencia mensal** (mes trabalhado).
 - Pagamento no dia **15** = mes anterior completo
 - Ex: Pagamento 15 Julho = trabalho realizado em Junho
 - Dashboard mostra sempre a competencia atual
-
-### Tabela competencies
-
-```sql
-competencies (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES auth.users,
-  month INTEGER,
-  year INTEGER,
-  expected_amount NUMERIC(10,2),
-  received_amount NUMERIC(10,2),
-  payment_date DATE,
-  status TEXT DEFAULT 'active', -- active, completed, archived
-  days_worked INTEGER,
-  total_hours NUMERIC(10,2),
-  UNIQUE(user_id, year, month)
-)
-```
 
 ---
 
@@ -121,7 +94,7 @@ competencies (
 | `settings` | Configuracoes do usuario |
 | `municipal_holidays` | Feriados municipais |
 | `reminders` | Lembretes |
-| `competencies` | Competencias mensais (novo) |
+| `competencies` | Competencias mensais |
 
 ### RLS
 
@@ -133,7 +106,7 @@ Todas as tabelas com RLS habilitado. Cada usuario acessa apenas seus dados.
 |---|---|
 | `supabase/migration.sql` | Schema completo (13 tabelas + RLS + indexes) |
 | `supabase/fix-rls.sql` | Correcoes de politicas RLS (WITH CHECK) |
-| `supabase/seed-rules.sql` | Regras padrao + update settings (base=970, meal=90) |
+| `supabase/seed-rules.sql` | Regras padrao + update settings |
 
 ---
 
@@ -141,7 +114,7 @@ Todas as tabelas com RLS habilitado. Cada usuario acessa apenas seus dados.
 
 - **Nacionais PT:** 2024, 2025, 2026 hardcoded em `src/utils/holidays.ts`
 - **Municipais Fafe:** Corpo de Deus, Festas de Fafe, Nossa Senhora da Piedade
-- Deteccao automatica no registro semanal e dashboard
+- Deteccao automatica no calendario e dashboard
 
 ---
 
@@ -161,13 +134,11 @@ src/
 │   │   ├── login-page.tsx
 │   │   └── register-page.tsx
 │   ├── dashboard/
-│   │   └── dashboard-page.tsx   # Dashboard com competencia + edicao inline
+│   │   └── dashboard-page.tsx
 │   ├── calendar/
-│   │   └── calendar-page.tsx
-│   ├── weeks/
-│   │   └── weekly-registration-page.tsx
+│   │   └── calendar-page.tsx   # Calendario UNIFICADO (edição de dias)
 │   ├── statistics/
-│   │   └── statistics-page.tsx   # Graficos com Recharts
+│   │   └── statistics-page.tsx
 │   ├── notes/
 │   │   └── notes-page.tsx
 │   ├── checklists/
@@ -177,18 +148,18 @@ src/
 ├── hooks/
 │   ├── use-auth.ts
 │   ├── use-auth-context.tsx
-│   └── use-queries.ts           # Todos os hooks React Query
+│   └── use-queries.ts
 ├── lib/
 │   ├── supabase.ts
 │   └── utils.ts
 ├── services/
-│   └── api.ts                   # Service layer completo
+│   └── api.ts
 ├── types/
-│   └── database.ts              # Tipos TypeScript do banco
+│   └── database.ts
 ├── utils/
 │   ├── date-utils.ts
-│   ├── holidays.ts              # Feriados PT + Fafe
-│   └── rules-engine.ts          # Motor de calculo salarial
+│   ├── holidays.ts
+│   └── rules-engine.ts
 ├── App.tsx
 ├── main.tsx
 └── index.css
@@ -202,34 +173,76 @@ src/
 |---|---|
 | `/auth/login` | Login |
 | `/auth/register` | Registro |
-| `/auth/callback` | OAuth/Magic Link callback |
-| `/` | Dashboard (competencia + dias inline) |
-| `/calendar` | Calendario |
-| `/weeks` | Registro Semanal |
+| `/auth/callback` | Magic Link callback |
+| `/` | Dashboard |
+| `/calendar` | Calendario (unificado) |
 | `/statistics` | Estatisticas |
 | `/notes` | Notas |
 | `/checklists` | Checklists |
 | `/reminders` | Lembretes |
 
-**Nota:** A pagina de Configuracoes foi removida da navegacao. Todos os valores estao hardcoded conforme especificado.
+**Nota:** A pagina de Registro Semanal foi removida. O Calendario e a pagina unica para gerir dias de trabalho.
 
 ---
 
-## Dashboard
+## Paginas
 
-O dashboard mostra:
+### Dashboard
+- Card de competencia atual com progresso
+- Cards de metricas (salario base, ganhos semanais, dias trabalhados, dias restantes)
+- Semana atual com dias clicaveis
+- Resumo financeiro completo
+- Smart assistant com dicas
+- Quick actions
 
-1. **Competencia Atual** — mes/ano, proximo pagamento, progresso com barra
-2. **Cards de metricas** — Salario Base, Ganhos Semana, Dias Trabalhados, Dias Restantes
-3. **Semana Atual** — destino, periodo, **dias clicaveis para edicao inline**
-4. **Resumo Financeiro** — breakdown completo por regra com valores
+### Calendario (Unificado)
+- Grade do mes com status visual por dia (trabalho, sabado, feriado, falta, ferias, pendente)
+- Filtros rapidos (10 opcoes: Todos, Trabalho, Sabados, Feriados, Faltas, Ferias, Porto, Lisboa, Algarve, Pendentes)
+- **Clique num dia para editar** — painel lateral com:
+  - Status do dia (Trabalhou/Falta/Ferias/Folga)
+  - Destino (Porto/Lisboa/Algarve)
+  - Observacao
+  - Ganho do dia calculado
+  - Auto-save automatico
+- Navegacao por mes com indicador "Mes Atual", "Mes Passado", "Proximo Mes"
+- Totais por semana
+- Resumo do mes (ganhos, comparacao com mes anterior, stats, destinos)
+- Legenda
 
-### Edicao Inline dos Dias
+### Estatisticas
+- Seletor de ano com setas
+- Seletor de mes com dropdown
+- Grafico de barras com gradiente e tooltip customizado
+- Grafico de area para tendencias
+- Grafico de pizza com porcentagens
+- Aba de breakdown com composicao salarial
+- Cards de comparacao (mes atual vs anterior)
+- Resumo por cidade com medias
 
-Cada dia da semana no dashboard e clicavel. Ao clicar, abre um menu com opcoes:
-- **Trabalho:** Porto, Lisboa, Algarve
-- **Outros:** Feriado, Ferias, Falta
-- **Limpar** — reseta o dia
+### Checklists
+- Edicao inline de tarefas
+- Filtros (Todos/Pendentes/Feitos)
+- Barra de progresso animada
+- Operacoes em lote (Marcar Tudo Feito, Limpar Feitos)
+- Card de celebracao
+
+### Lembretes
+- Categorias do banco (Trabalho, Pessoal, Financeiro, Saude, Familia, Casa, Outro)
+- Filtro por categoria
+- Ordenacao por data/prioridade
+- Indicadores de atraso (vermelho)
+- Secao recolhivel de concluidos
+
+---
+
+## Funcionalidades
+
+- **Auto-save** — Registro semanal salva automaticamente 1.5s apos alteracao
+- **Calculo automatico** — Ganhos calculados em tempo real via rules engine
+- **Mobile responsive** — Sidebar hamburger drawer, todas as paginas responsivas
+- **Dark mode** — Toggle na sidebar
+- **Feriados automaticos** — Deteccao de feriados nacionais e municipais
+- **Comparacao mensal** — Ganhos do mes vs mes anterior
 
 ---
 
@@ -249,32 +262,15 @@ npx vite preview --host  # Preview com rede
 1. Abrir Supabase SQL Editor
 2. Colar e executar `supabase/migration.sql`
 3. Colar e executar `supabase/fix-rls.sql`
-4. Colar e executar `supabase/seed-rules.sql` (insere regras + atualiza settings)
-5. Verificar se `settings.base_salary = 970` e `meal_allowance = 90`
+4. Colar e executar `supabase/seed-rules.sql`
 
 ---
 
-## Proximos Passos
+## Deploy
 
-### Prioridade Alta
-
-1. **Historico de competencias** — pagina que lista competencias anteriores com previsto vs recebido
-2. **Auto-criar competencia** no 1o dia do mes (ja implementado `ensureCompetency`, precisa de trigger ou cron)
-3. **Pagina de Pagamentos** — comparacao previsto vs recebido por competencia
-4. **Update do total_earned** na tabela work_weeks ao salvar dias
-
-### Prioridade Media
-
-5. **Exportacao PDF/Excel**
-6. **Notificacoes push** para lembretes
-7. **Modo offline** (PWA completa)
-8. **Upload de recibos** funcional
-
-### Prioridade Baixa
-
-9. **OCR para recibos**
-10. **Integracao Google Calendar**
-11. **App Mobile** (React Native)
+```bash
+npx vercel --prod --yes
+```
 
 ---
 
@@ -282,7 +278,8 @@ npx vite preview --host  # Preview com rede
 
 - **Build limpo** — `npm run build` passa sem erros
 - **Auth trigger removido** — profile/settings criados client-side em `use-auth.ts`
-- **Valores hardcoded** — base_salary=970, meal=90, payment_day=15, hora=5.31€, vale=4.50€
+- **Valores hardcoded** — base=820€, duodecimos=150€, meal=4.50€/dia
 - **Feriados de Fafe** incluidos nos feriados municipais
-- **Sexta-feira em Lisboa** = 20€ (nao 30€)
+- **Calendario unificado** — pagina de semanas removida, tudo no calendario
+- **Google Removido** — Auth apenas via email/senha e Magic Link
 - **Competencia** = mes trabalhado, pagamento no 15 do mes seguinte
