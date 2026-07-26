@@ -1,21 +1,24 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import {
-  Calendar,
   DollarSign,
   TrendingUp,
-  Clock,
-  MapPin,
-  Briefcase,
-  Check,
-  X,
+  CheckCircle2,
+  AlertTriangle,
+  Calendar,
+  Zap,
   Plane,
-  AlertCircle,
+  ChevronRight,
+  MapPin,
+  X,
+  Clock,
   Target,
 } from 'lucide-react'
 import { format, startOfWeek, endOfWeek, addMonths } from 'date-fns'
 import { pt } from 'date-fns/locale'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { useAuthContext } from '@/hooks/use-auth-context'
@@ -26,38 +29,28 @@ import {
   useWorkDaysByMonth,
   useSettings,
   useSalaryRules,
-  useUpsertWorkDay,
   useEnsureCompetency,
 } from '@/hooks/use-queries'
 import { calculateMonthEarnings } from '@/utils/rules-engine'
+import { isNationalHoliday, isFafeMunicipalHoliday } from '@/utils/holidays'
 
 function formatEuro(value: number): string {
   return `€${value.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
-  },
-}
+const DAY_LABELS = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB']
 
 const item = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0 },
 }
 
-const DAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab']
-const CITY_OPTIONS = ['Porto', 'Lisboa', 'Algarve']
-
 export function DashboardPage() {
+  const navigate = useNavigate()
   const { user } = useAuthContext()
   const { data: currentWeek } = useCurrentWeek()
   const { data: allWeeks = [] } = useWorkWeeks()
-  const upsertDay = useUpsertWorkDay()
   const ensureCompetency = useEnsureCompetency()
-  const [selectedDay, setSelectedDay] = useState<string | null>(null)
 
   useEffect(() => {
     ensureCompetency.mutate()
@@ -84,14 +77,22 @@ export function DashboardPage() {
     return calculateMonthEarnings(monthWorkDays, rules, settings ?? undefined)
   }, [monthWorkDays, rules, settings])
 
-  const daysWorked = workDays.filter(d => d.worked).length
-  const daysRemaining = 6 - daysWorked
-
   const daysInMonth = new Date(currentYear, currentMonth, 0).getDate()
   const daysPassed = now.getDate()
-  const daysLeft = daysInMonth - daysPassed
+  const daysLeftInMonth = daysInMonth - daysPassed
   const progressPercent = Math.round((daysPassed / daysInMonth) * 100)
-  const registeredDays = monthWorkDays.filter(d => d.worked).length
+
+  const workedDaysMonth = monthWorkDays.filter(d => d.worked).length
+  const absenceDaysMonth = monthWorkDays.filter(d => d.is_absence).length
+  const vacationDaysMonth = monthWorkDays.filter(d => d.is_vacation).length
+  const saturdaysMonth = monthWorkDays.filter(d => {
+    const date = new Date(d.date)
+    return date.getDay() === 6 && d.worked
+  }).length
+  const totalWeeks = allWeeks.filter(w => {
+    const d = new Date(w.start_date)
+    return d.getMonth() + 1 === currentMonth && d.getFullYear() === currentYear
+  }).length
 
   const getGreeting = () => {
     const hour = now.getHours()
@@ -102,363 +103,472 @@ export function DashboardPage() {
 
   const getWorkDay = (dateStr: string) => workDays.find(d => d.date === dateStr)
 
-  const handleSetDestination = (dateStr: string, city: string) => {
-    const existing = getWorkDay(dateStr)
-    if (existing) {
-      upsertDay.mutate({
-        id: existing.id,
-        user_id: user!.id,
-        week_id: displayWeek!.id,
-        date: dateStr,
-        day_of_week: existing.day_of_week,
-        worked: true,
-        destination: city,
-        is_holiday: existing.is_holiday,
-        is_vacation: existing.is_vacation,
-        is_absence: existing.is_absence,
-      })
-    }
-    setSelectedDay(null)
-  }
+  const assistantMessage = useMemo(() => {
+    const todayStr = format(now, 'yyyy-MM-dd')
+    const todayDow = now.getDay()
 
-  const handleSetAbsence = (dateStr: string, type: 'holiday' | 'vacation' | 'absence') => {
-    const existing = getWorkDay(dateStr)
-    if (existing) {
-      upsertDay.mutate({
-        id: existing.id,
-        user_id: user!.id,
-        week_id: displayWeek!.id,
-        date: dateStr,
-        day_of_week: existing.day_of_week,
-        worked: false,
-        destination: existing.destination,
-        is_holiday: type === 'holiday',
-        is_vacation: type === 'vacation',
-        is_absence: type === 'absence',
-      })
+    if (isNationalHoliday(now) || isFafeMunicipalHoliday(now)) {
+      const todayWorkDay = workDays.find(d => d.date === todayStr)
+      if (!todayWorkDay) {
+        return { type: 'holiday' as const, text: 'Hoje é feriado. Trabalhou?', icon: '🔵' }
+      }
+      if (todayWorkDay.worked) {
+        return { type: 'info' as const, text: 'Feriado trabalhado. Bônus aplicado.', icon: '🔵' }
+      }
+      return { type: 'info' as const, text: 'Hoje é feriado. Folga registrada.', icon: '🔵' }
     }
-    setSelectedDay(null)
-  }
 
-  const handleClearDay = (dateStr: string) => {
-    const existing = getWorkDay(dateStr)
-    if (existing) {
-      upsertDay.mutate({
-        id: existing.id,
-        user_id: user!.id,
-        week_id: displayWeek!.id,
-        date: dateStr,
-        day_of_week: existing.day_of_week,
-        worked: false,
-        destination: existing.destination,
-        is_holiday: false,
-        is_vacation: false,
-        is_absence: false,
-      })
+    const weekDays = monthWorkDays.filter(d => {
+      const date = new Date(d.date)
+      return date >= weekStart && date <= weekEnd
+    })
+
+    if (weekDays.length === 0) {
+      return { type: 'action' as const, text: 'Nova semana. Escolha o destino e comece.', icon: '📅' }
     }
-    setSelectedDay(null)
-  }
 
-  const monthName = format(now, 'MMMM yyyy', { locale: pt })
+    const todayRegistered = workDays.find(d => d.date === todayStr)
+    if (!todayRegistered && todayDow >= 1 && todayDow <= 5) {
+      return { type: 'warning' as const, text: 'Hoje ainda não foi registado. Clique em "Registar Hoje".', icon: '⚠️' }
+    }
+
+    if (todayDow === 6) {
+      const satDay = workDays.find(d => d.date === todayStr)
+      if (satDay && !satDay.worked) {
+        return { type: 'info' as const, text: 'É sábado. Trabalhou? Registe na semana.', icon: '📋' }
+      }
+    }
+
+    const pendingDays = workDays.filter(d => {
+      const date = new Date(d.date)
+      const dow = date.getDay()
+      return dow >= 1 && dow <= 5 && !d.worked && !d.is_absence && !d.is_vacation && !d.is_holiday
+    })
+
+    if (pendingDays.length > 0) {
+      return { type: 'warning' as const, text: `Falta registar ${pendingDays.length} dia(s) desta semana.`, icon: '⚠️' }
+    }
+
+    return { type: 'success' as const, text: 'Tudo registado. Bom trabalho!', icon: '🟢' }
+  }, [workDays, monthWorkDays, now, weekStart, weekEnd])
+
+  const pendingItems = useMemo(() => {
+    const items: string[] = []
+    const weekDays = workDays.filter(d => {
+      const date = new Date(d.date)
+      return date >= weekStart && date <= weekEnd && date.getDay() >= 1 && date.getDay() <= 6
+    })
+
+    const sat = weekDays.find(d => new Date(d.date).getDay() === 6)
+    if (sat && !sat.worked && !sat.is_absence && !sat.is_vacation && !sat.is_holiday) {
+      items.push('Sábado')
+    }
+
+    weekDays.forEach(d => {
+      const date = new Date(d.date)
+      const dow = date.getDay()
+      if (dow >= 1 && dow <= 5 && !d.worked && !d.is_absence && !d.is_vacation && !d.is_holiday) {
+        items.push(format(date, "EEEE", { locale: pt }))
+      }
+    })
+
+    return items
+  }, [workDays, weekStart, weekEnd])
+
+  const nextEvents = useMemo(() => {
+    const events: { date: Date; label: string }[] = []
+    const competenceEnd = new Date(currentYear, currentMonth, 0)
+    const nextCompetence = new Date(currentYear, currentMonth, 1)
+    const payment = new Date(currentYear, currentMonth, 15)
+
+    if (payment <= now) {
+      payment.setMonth(payment.getMonth() + 1)
+    }
+
+    events.push({ date: competenceEnd, label: 'Fim da competência' })
+    events.push({ date: nextCompetence, label: 'Nova competência' })
+    events.push({ date: payment, label: 'Recebimento previsto' })
+
+    return events
+      .filter(e => e.date >= now)
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .slice(0, 3)
+  }, [currentYear, currentMonth, now])
+
+  const financialBreakdown = useMemo(() => {
+    const items: { label: string; amount: number; positive: boolean }[] = []
+
+    const base = 820
+    const absenceTotal = absenceDaysMonth * 80
+    const baseNet = base - absenceTotal
+
+    items.push({ label: 'Salário Base', amount: baseNet, positive: true })
+
+    const mealDays = workedDaysMonth
+    const mealTotal = mealDays * 4.50
+    if (mealTotal > 0) items.push({ label: 'Subsídio Alimentação', amount: mealTotal, positive: true })
+
+    items.push({ label: 'Duodécimos', amount: 150, positive: true })
+
+    const weekBonuses = monthEarnings.breakdown
+      .filter(b => b.rule_id.startsWith('week_city'))
+    weekBonuses.forEach(b => {
+      items.push({ label: b.rule_name, amount: b.amount, positive: true })
+    })
+
+    const satBonuses = monthEarnings.breakdown
+      .filter(b => b.rule_id.startsWith('saturday'))
+    satBonuses.forEach(b => {
+      items.push({ label: b.rule_name, amount: b.amount, positive: true })
+    })
+
+    const holBonuses = monthEarnings.breakdown
+      .filter(b => b.rule_id.startsWith('holiday'))
+    holBonuses.forEach(b => {
+      items.push({ label: b.rule_name, amount: b.amount, positive: true })
+    })
+
+    if (absenceTotal > 0) {
+      items.push({ label: 'Descontos (faltas)', amount: -absenceTotal, positive: false })
+    }
+
+    return items.filter(i => i.amount !== 0)
+  }, [monthEarnings, workedDaysMonth, absenceDaysMonth])
+
+  const weekDayColors: Record<string, string> = {
+    worked: 'bg-green-500',
+    absence: 'bg-red-500',
+    vacation: 'bg-yellow-500',
+    holiday: 'bg-blue-500',
+    off: 'bg-gray-300 dark:bg-gray-600',
+  }
 
   return (
     <motion.div
-      variants={container}
       initial="hidden"
       animate="show"
-      className="space-y-6"
+      variants={{ show: { transition: { staggerChildren: 0.06 } } }}
+      className="flex flex-col lg:flex-row gap-4 lg:gap-6"
     >
-      <motion.div variants={item} className="space-y-1">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
-          {getGreeting()}, {user?.email?.split('@')[0]}
-        </h1>
-        <p className="text-sm md:text-base text-muted-foreground">
-          {format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: pt })}
-        </p>
-      </motion.div>
+      <div className="flex-1 space-y-4">
+        <motion.div variants={item} className="space-y-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+            {getGreeting()}, {user?.email?.split('@')[0]} 👋
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground capitalize">
+            {format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: pt })}
+          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge variant="secondary" className="text-xs">
+              Competência: {format(now, 'MMMM yyyy', { locale: pt })}
+            </Badge>
+          </div>
+        </motion.div>
 
-      <motion.div variants={item}>
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-3 md:p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Target className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-              <div>
-                <p className="text-xs md:text-sm text-muted-foreground">Competência Atual</p>
-                <p className="text-lg md:text-2xl font-bold text-foreground capitalize">{monthName}</p>
+        <motion.div variants={item}>
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <DollarSign className="w-5 h-5 text-primary" />
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Próximo Pagamento</span>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Recebimento previsto</p>
-                <p className="font-bold text-foreground">15 {format(addMonths(now, 1), 'MMMM', { locale: pt })}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Salário previsto</p>
-                <p className="font-bold text-foreground">{formatEuro(monthEarnings.total)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Dias registrados</p>
-                <p className="font-bold text-foreground">{registeredDays}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Dias restantes</p>
-                <p className="font-bold text-foreground">{daysLeft}</p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Progresso da competência</span>
-                <span className="font-medium text-foreground">{progressPercent}%</span>
-              </div>
-              <Progress value={progressPercent} className="h-2" />
-              <p className="text-xs text-muted-foreground text-right">
-                Faltam {daysLeft} dias para encerrar a competência
+              <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4">
+                {formatEuro(monthEarnings.total)}
               </p>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
-        <Card>
-          <CardContent className="p-3 md:p-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs md:text-sm text-muted-foreground">Salário Base</p>
-                <p className="text-lg md:text-2xl font-bold text-foreground">{formatEuro(settings?.base_salary ?? 0)}</p>
-              </div>
-              <div className="p-2 md:p-3 rounded-xl bg-green-500/10">
-                <DollarSign className="w-4 h-4 md:w-6 md:h-6 text-green-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 md:p-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs md:text-sm text-muted-foreground">Ganhos do Mês</p>
-                <p className="text-lg md:text-2xl font-bold text-foreground">{formatEuro(monthEarnings.total)}</p>
-              </div>
-              <div className="p-2 md:p-3 rounded-xl bg-blue-500/10">
-                <TrendingUp className="w-4 h-4 md:w-6 md:h-6 text-blue-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 md:p-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs md:text-sm text-muted-foreground">Dias Trabalhados</p>
-                <p className="text-lg md:text-2xl font-bold text-foreground">{daysWorked}/6</p>
-              </div>
-              <div className="p-2 md:p-3 rounded-xl bg-purple-500/10">
-                <Briefcase className="w-4 h-4 md:w-6 md:h-6 text-purple-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 md:p-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs md:text-sm text-muted-foreground">Dias Restantes</p>
-                <p className="text-lg md:text-2xl font-bold text-foreground">{Math.max(0, daysRemaining)}</p>
-              </div>
-              <div className="p-2 md:p-3 rounded-xl bg-orange-500/10">
-                <Clock className="w-4 h-4 md:w-6 md:h-6 text-orange-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div variants={item} className="lg:col-span-2">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Semana Atual</CardTitle>
-              <Badge variant="secondary">Semana {displayWeek?.week_number ?? '-'}</Badge>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Destino</p>
-                    <p className="font-medium text-foreground">{displayWeek?.destination ?? 'Não definido'}</p>
-                  </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Competência</p>
+                  <p className="font-medium text-foreground capitalize">{format(now, 'MMMM yyyy', { locale: pt })}</p>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Período</p>
-                    <p className="font-medium text-foreground">
-                      {format(weekStart, "d MMM", { locale: pt })} - {format(weekEnd, "d MMM yyyy", { locale: pt })}
-                    </p>
-                  </div>
+                <div>
+                  <p className="text-muted-foreground">Pagamento previsto</p>
+                  <p className="font-medium text-foreground">
+                    15 {format(addMonths(now, 1), 'MMMM', { locale: pt })}
+                  </p>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-6 gap-1 sm:gap-2">
-                {DAY_LABELS.map((day, index) => {
-                  const dayDate = new Date(weekStart)
-                  dayDate.setDate(dayDate.getDate() + index)
-                  const dateStr = format(dayDate, 'yyyy-MM-dd')
-                  const workDay = getWorkDay(dateStr)
-                  const isWorked = workDay?.worked ?? false
-                  const isHoliday = workDay?.is_holiday ?? false
-                  const isVacation = workDay?.is_vacation ?? false
-                  const isAbsence = workDay?.is_absence ?? false
-                  const isToday = format(now, 'yyyy-MM-dd') === dateStr
-                  const isSelected = selectedDay === dateStr
-
-                  let statusColor = 'bg-muted text-muted-foreground'
-                  let statusIcon = null
-                  if (isWorked) {
-                    statusColor = 'bg-green-500/10 text-green-600 dark:text-green-400 ring-2 ring-green-500/20'
-                    statusIcon = <Check className="w-3 h-3" />
-                  } else if (isHoliday) {
-                    statusColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-2 ring-amber-500/20'
-                    statusIcon = <AlertCircle className="w-3 h-3" />
-                  } else if (isVacation) {
-                    statusColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-2 ring-blue-500/20'
-                    statusIcon = <Plane className="w-3 h-3" />
-                  } else if (isAbsence) {
-                    statusColor = 'bg-red-500/10 text-red-600 dark:text-red-400 ring-2 ring-red-500/20'
-                    statusIcon = <X className="w-3 h-3" />
-                  }
-
-                  return (
-                    <div key={day} className="relative">
-                      <button
-                        onClick={() => setSelectedDay(isSelected ? null : dateStr)}
-                        className={`w-full p-1.5 sm:p-3 rounded-xl text-center transition-all cursor-pointer hover:opacity-80 ${statusColor} ${isToday ? 'ring-2 ring-primary/40' : ''}`}
-                      >
-                        <p className="text-[10px] sm:text-xs font-medium">{day}</p>
-                        <p className="text-sm sm:text-lg font-bold">{format(dayDate, 'd')}</p>
-                        {statusIcon && <div className="flex justify-center mt-0.5 sm:mt-1">{statusIcon}</div>}
-                        {workDay?.destination && isWorked && (
-                          <p className="text-[8px] sm:text-[10px] mt-0.5 opacity-70">{workDay.destination}</p>
-                        )}
-                      </button>
-
-                      {isSelected && (
-                        <div className="absolute top-full left-0 right-0 z-50 mt-1 p-2 bg-card border border-border rounded-xl shadow-lg min-w-[220px]">
-                          <p className="text-xs font-medium text-muted-foreground mb-2 text-center">
-                            {format(dayDate, "d 'de' MMMM", { locale: pt })}
-                          </p>
-
-                          <div className="space-y-1">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Trabalho</p>
-                            <div className="grid grid-cols-3 gap-1">
-                              {CITY_OPTIONS.map(city => (
-                                <button
-                                  key={city}
-                                  onClick={() => handleSetDestination(dateStr, city)}
-                                  className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
-                                    workDay?.destination === city && isWorked
-                                      ? 'bg-green-500 text-white'
-                                      : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-                                  }`}
-                                >
-                                  {city}
-                                </button>
-                              ))}
-                            </div>
-
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider pt-1">Outros</p>
-                            <div className="grid grid-cols-3 gap-1">
-                              <button
-                                onClick={() => handleSetAbsence(dateStr, 'holiday')}
-                                className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
-                                  isHoliday ? 'bg-amber-500 text-white' : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-                                }`}
-                              >
-                                Feriado
-                              </button>
-                              <button
-                                onClick={() => handleSetAbsence(dateStr, 'vacation')}
-                                className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
-                                  isVacation ? 'bg-blue-500 text-white' : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-                                }`}
-                              >
-                                Férias
-                              </button>
-                              <button
-                                onClick={() => handleSetAbsence(dateStr, 'absence')}
-                                className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
-                                  isAbsence ? 'bg-red-500 text-white' : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-                                }`}
-                              >
-                                Falta
-                              </button>
-                            </div>
-
-                            {(isWorked || isHoliday || isVacation || isAbsence) && (
-                              <button
-                                onClick={() => handleClearDay(dateStr)}
-                                className="w-full px-2 py-1.5 rounded text-xs font-medium bg-muted hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors mt-1"
-                              >
-                                Limpar
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
         <motion.div variants={item}>
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle className="text-lg">Resumo - {monthName}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                {monthEarnings.breakdown.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground truncate">{item.rule_name}</span>
-                    <span className={`text-sm font-medium ${
-                      item.amount >= 0 ? 'text-green-600 dark:text-green-40' : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      {item.amount >= 0 ? '+' : ''}€{item.amount.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                ))}
-              </div>
+          <div className={`flex items-center gap-3 p-3 rounded-xl border ${
+            assistantMessage.type === 'success' ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800' :
+            assistantMessage.type === 'warning' ? 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800' :
+            assistantMessage.type === 'action' ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800' :
+            'bg-muted/50 border-border'
+          }`}>
+            <span className="text-lg">{assistantMessage.icon}</span>
+            <p className={`text-sm font-medium ${
+              assistantMessage.type === 'success' ? 'text-green-700 dark:text-green-400' :
+              assistantMessage.type === 'warning' ? 'text-yellow-700 dark:text-yellow-400' :
+              assistantMessage.type === 'action' ? 'text-blue-700 dark:text-blue-400' :
+              'text-foreground'
+            }`}>
+              {assistantMessage.text}
+            </p>
+          </div>
+        </motion.div>
 
-              <div className="pt-4 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-foreground">Total do Mês</span>
-                  <span className="text-xl font-bold text-foreground">{formatEuro(monthEarnings.total)}</span>
-                </div>
+        <motion.div variants={item}>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-muted-foreground">Progresso da competência</span>
+                <span className="font-bold text-foreground">{progressPercent}%</span>
               </div>
-
-              <div className="pt-4 border-t border-border space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Pagamento</span>
-                  <span className="text-foreground font-medium">Dia 15 de cada mês</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Próximo recebimento</span>
-                  <span className="text-foreground font-medium">15 {format(addMonths(now, 1), 'MMMM', { locale: pt })}</span>
-                </div>
-              </div>
+              <Progress value={progressPercent} className="h-2.5" />
+              <p className="text-xs text-muted-foreground mt-1">
+                Faltam {daysLeftInMonth} dias para encerrar a competência
+              </p>
             </CardContent>
           </Card>
         </motion.div>
+
+        <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <Button
+            variant="outline"
+            className="h-auto py-3 sm:py-4 flex flex-col items-center gap-1.5 hover:bg-green-50 dark:hover:bg-green-900/10 hover:border-green-300 dark:hover:border-green-700"
+            onClick={() => navigate('/weeks')}
+          >
+            <Zap className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <span className="text-xs font-medium">Registar Hoje</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto py-3 sm:py-4 flex flex-col items-center gap-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/10 hover:border-blue-300 dark:hover:border-blue-700"
+            onClick={() => navigate('/weeks')}
+          >
+            <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <span className="text-xs font-medium">Semana Padrão</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto py-3 sm:py-4 flex flex-col items-center gap-1.5 hover:bg-yellow-50 dark:hover:bg-yellow-900/10 hover:border-yellow-300 dark:hover:border-yellow-700"
+            onClick={() => navigate('/weeks')}
+          >
+            <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+            <span className="text-xs font-medium">Exceção</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto py-3 sm:py-4 flex flex-col items-center gap-1.5 hover:bg-purple-50 dark:hover:bg-purple-900/10 hover:border-purple-300 dark:hover:border-purple-700"
+            onClick={() => navigate('/weeks')}
+          >
+            <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <span className="text-xs font-medium">Abrir Semana</span>
+          </Button>
+        </motion.div>
+
+        {pendingItems.length > 0 && (
+          <motion.div variants={item}>
+            <Card className="border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-900/5">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                  <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">Pendências</span>
+                </div>
+                <div className="space-y-1">
+                  {pendingItems.map((item, i) => (
+                    <p key={i} className="text-sm text-yellow-600 dark:text-yellow-400">• {item}</p>
+                  ))}
+                </div>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="mt-2 p-0 h-auto text-yellow-700 dark:text-yellow-400"
+                  onClick={() => navigate('/weeks')}
+                >
+                  Ir para semanas <ChevronRight className="w-3 h-3 ml-1" />
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {pendingItems.length === 0 && workDays.length > 0 && (
+          <motion.div variants={item}>
+            <Card className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/5">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <span className="text-sm font-medium text-green-700 dark:text-green-400">Tudo registado nesta semana.</span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        <motion.div variants={item}>
+          <div
+            className="flex items-center justify-between p-3 rounded-xl border border-border bg-card cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => navigate('/weeks')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col items-center gap-1 min-w-[40px]">
+                <span className="text-xs font-bold text-muted-foreground">SEM {displayWeek?.week_number ?? '-'}</span>
+                <div className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs font-medium text-foreground">{displayWeek?.destination ?? '-'}</span>
+                </div>
+              </div>
+              <div className="flex gap-1">
+                {DAY_LABELS.map((day, index) => {
+                  const dayDate = new Date(weekStart)
+                  dayDate.setDate(dayDate.getDate() + index)
+                  const dateStr = format(dayDate, 'yyyy-MM-dd')
+                  const workDay = getWorkDay(dateStr)
+                  let status = 'off'
+                  if (workDay?.worked) status = 'worked'
+                  else if (workDay?.is_holiday) status = 'holiday'
+                  else if (workDay?.is_vacation) status = 'vacation'
+                  else if (workDay?.is_absence) status = 'absence'
+
+                  return (
+                    <div key={day} className="flex flex-col items-center gap-0.5">
+                      <span className="text-[9px] text-muted-foreground">{day}</span>
+                      <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${weekDayColors[status]} flex items-center justify-center`}>
+                        {status === 'worked' && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
+                        {status === 'absence' && <X className="w-2.5 h-2.5 text-white" />}
+                        {status === 'vacation' && <Plane className="w-2.5 h-2.5 text-white" />}
+                        {status === 'holiday' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        {status === 'off' && <div className="w-1 h-1 rounded-full bg-white/60" />}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </div>
+        </motion.div>
+
+        {nextEvents.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardContent className="p-4 space-y-2">
+                <p className="text-sm font-medium text-muted-foreground mb-2">Próximos Eventos</p>
+                {nextEvents.map((event, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-sm text-foreground">
+                        {format(event.date, "d 'de' MMMM", { locale: pt })}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{event.label}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        <motion.div variants={item} className="grid grid-cols-4 gap-2">
+          <div className="text-center p-2 rounded-lg bg-muted/50">
+            <p className="text-lg sm:text-2xl font-bold text-foreground">{workedDaysMonth}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Dias</p>
+          </div>
+          <div className="text-center p-2 rounded-lg bg-muted/50">
+            <p className="text-lg sm:text-2xl font-bold text-foreground">{totalWeeks}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Semanas</p>
+          </div>
+          <div className="text-center p-2 rounded-lg bg-muted/50">
+            <p className="text-lg sm:text-2xl font-bold text-foreground">{saturdaysMonth}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Sábados</p>
+          </div>
+          <div className="text-center p-2 rounded-lg bg-muted/50">
+            <p className={`text-lg sm:text-2xl font-bold ${absenceDaysMonth > 0 ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>
+              {absenceDaysMonth}
+            </p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Faltas</p>
+          </div>
+        </motion.div>
+      </div>
+
+      <div className="lg:w-72 xl:w-80 shrink-0">
+        <div className="lg:sticky lg:top-20 space-y-4">
+          <motion.div variants={item}>
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">Resumo Financeiro</span>
+                </div>
+                <div className="space-y-2">
+                  {financialBreakdown.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{item.label}</span>
+                      <span className={`text-xs font-medium ${item.positive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {item.positive ? '+' : ''}€{Math.abs(item.amount).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="pt-2 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-foreground">Total</span>
+                    <span className="text-lg font-bold text-foreground">{formatEuro(monthEarnings.total)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={item}>
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Competência</span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Mês</span>
+                    <span className="font-medium text-foreground capitalize">{format(now, 'MMMM yyyy', { locale: pt })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Fim</span>
+                    <span className="font-medium text-foreground">
+                      {format(new Date(currentYear, currentMonth, 0), "d 'de' MMMM", { locale: pt })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Recebimento</span>
+                    <span className="font-medium text-foreground">
+                      15 {format(addMonths(now, 1), 'MMMM', { locale: pt })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Registrado</span>
+                    <span className="font-medium text-foreground">{workedDaysMonth} dias</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={item}>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Target className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Estatísticas Rápidas</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="p-2 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold text-foreground">{workedDaysMonth}</p>
+                    <p className="text-[10px] text-muted-foreground">Trabalhados</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold text-foreground">{vacationDaysMonth}</p>
+                    <p className="text-[10px] text-muted-foreground">Férias</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </div>
     </motion.div>
   )
