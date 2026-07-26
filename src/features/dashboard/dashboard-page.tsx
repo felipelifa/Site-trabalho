@@ -203,7 +203,7 @@ export function DashboardPage() {
   const financialBreakdown = useMemo(() => {
     const items: { label: string; amount: number; positive: boolean }[] = []
 
-    const base = 870
+    const base = 820
     const absenceTotal = absenceDaysMonth * 80
     const baseNet = base - absenceTotal
 

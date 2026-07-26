@@ -11,7 +11,7 @@ export interface Settings {
   fourteenth_month?: boolean
 }
 
-const BASE_SALARY = 870
+const BASE_SALARY = 820
 const MEAL_VOUCHER = 4.27
 const DUODECIMOS = 150
 
@@ -263,7 +263,7 @@ export function calculateDayEarnings(
     return { date: workDay.date, total, meal_deducted: true, applied_rules: appliedRules }
   }
 
-  return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
+  return { date: workDay.date, total: 0, meal_deducted: false, applied_rules: [] }
 }
 
 export function calculateWeekEarnings(
@@ -280,7 +280,8 @@ export function calculateWeekEarnings(
     const dayCalc = calculateDayEarnings(workDay, rules, date)
     total += dayCalc.total
 
-    if (workDay.worked && !dayCalc.meal_deducted) {
+    const isRegularWorkedDay = workDay.worked && !workDay.is_holiday && !workDay.is_vacation && !workDay.is_absence && !isSaturday(date)
+    if (isRegularWorkedDay) {
       daysForMeal++
     }
 
@@ -352,21 +353,35 @@ export function calculateMonthEarnings(
   let total = 0
   const breakdown: CalculationResult['breakdown'] = []
 
-  let absences = 0
+  let mondayAbsences = 0
+  let fridayAbsences = 0
+  let normalAbsences = 0
   for (const workDay of workDays) {
-    if (workDay.is_absence) absences++
+    if (workDay.is_absence) {
+      if (workDay.day_of_week === 1) mondayAbsences++
+      else if (workDay.day_of_week === 5) fridayAbsences++
+      else normalAbsences++
+    }
   }
 
-  const baseAfterAbsences = BASE_SALARY - (absences * 80)
+  const totalAbsenceDeduction = (mondayAbsences * 240) + (fridayAbsences * 240) + (normalAbsences * 80)
+  const baseAfterAbsences = BASE_SALARY - totalAbsenceDeduction
+
+  let absenceReason = 'Salário Base fixo'
+  if (totalAbsenceDeduction > 0) {
+    const parts: string[] = []
+    if (mondayAbsences > 0) parts.push(`${mondayAbsences} seg × 240€`)
+    if (fridayAbsences > 0) parts.push(`${fridayAbsences} sex × 240€`)
+    if (normalAbsences > 0) parts.push(`${normalAbsences} falta(s) × 80€`)
+    absenceReason = `${BASE_SALARY}€ - ${parts.join(' - ')}`
+  }
 
   breakdown.push({
     rule_id: 'base',
     rule_name: 'Salário Base',
     amount: baseAfterAbsences,
     applied: true,
-    reason: absences > 0
-      ? `${BASE_SALARY}€ - ${absences} falta(s) × 80€`
-      : 'Salário Base fixo',
+    reason: absenceReason,
   })
   total += baseAfterAbsences
 
@@ -413,7 +428,8 @@ export function calculateMonthEarnings(
     const dayCalc = calculateDayEarnings(workDay, rules, date)
     total += dayCalc.total
 
-    if (workDay.worked && !dayCalc.meal_deducted) {
+    const isRegularWorkedDay = workDay.worked && !workDay.is_holiday && !workDay.is_vacation && !workDay.is_absence && !isSaturday(date)
+    if (isRegularWorkedDay) {
       daysForMeal++
     }
 
