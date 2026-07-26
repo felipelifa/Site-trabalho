@@ -121,7 +121,15 @@ export function CalendarPage() {
 
   const getDayInfo = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd')
-    const workDay = workDaysMap.get(dateStr)
+    const isEditing = dayData && dateStr === dayData.date
+    const workDay = isEditing ? {
+      ...workDaysMap.get(dateStr),
+      worked: dayData.worked,
+      is_vacation: dayData.isVacation,
+      is_absence: dayData.isAbsence,
+      destination: dayData.destination,
+      notes: dayData.notes,
+    } : workDaysMap.get(dateStr)
     const isHol = isNationalHoliday(date) || isFafeMunicipalHoliday(date)
     const holName = getHolidayName(date)
     const dow = date.getDay()
@@ -365,7 +373,7 @@ export function CalendarPage() {
         default: return true
       }
     })
-  }, [days, activeFilter, workDays])
+  }, [days, activeFilter, workDays, dayData])
 
   const monthStats = useMemo(() => {
     let worked = 0, satWorked = 0, holidays = 0, absences = 0, vacations = 0, pending = 0
@@ -429,7 +437,7 @@ export function CalendarPage() {
     const prevTotal = prevCalc.total
 
     return { worked, satWorked, holidays, absences, vacations, pending, totalEarned, prevTotal, cities }
-  }, [days, workDays, prevWorkDays, rules])
+  }, [days, workDays, prevWorkDays, rules, dayData])
 
   const weekGroups = useMemo(() => {
     const groups: { weekStart: Date; weekEnd: Date; days: Date[]; total: number; destination: string | null }[] = []
@@ -472,7 +480,7 @@ export function CalendarPage() {
     }
 
     return groups
-  }, [days, workDays])
+  }, [days, workDays, dayData])
 
   const comparison = useMemo(() => {
     const diff = monthStats.totalEarned - monthStats.prevTotal
