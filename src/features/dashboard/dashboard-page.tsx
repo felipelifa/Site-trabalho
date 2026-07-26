@@ -57,6 +57,8 @@ export function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [isInstallable, setIsInstallable] = useState(false)
+  const [installDismissed, setInstallDismissed] = useState(false)
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
 
   useEffect(() => {
     ensureCompetency.mutate()
@@ -81,6 +83,8 @@ export function DashboardPage() {
       setDeferredPrompt(null)
     }
   }
+
+  const showInstallBanner = !installDismissed && (isInstallable || isIOS)
 
   const displayWeek = useMemo(() => {
     if (allWeeks.length > 0) return allWeeks[0]
@@ -317,6 +321,36 @@ export function DashboardPage() {
             </Badge>
           </div>
         </motion.div>
+
+        {showInstallBanner && (
+          <motion.div variants={item}>
+            <Card className="border-green-500/30 bg-green-500/5">
+              <CardContent className="p-3 sm:p-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Download className="w-5 h-5 text-green-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Instalar Aplicação</p>
+                    <p className="text-xs text-muted-foreground">
+                      {isIOS
+                        ? 'Toque em Partilhar e depois "Adicionar ao Ecrã inicial"'
+                        : 'Adicione ao ecrã inicial para acesso rápido'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {isInstallable && (
+                    <Button size="sm" onClick={handleInstall} className="bg-green-600 hover:bg-green-700 text-white">
+                      Instalar
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => setInstallDismissed(true)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         <motion.div variants={item}>
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
@@ -621,22 +655,6 @@ export function DashboardPage() {
               </CardContent>
             </Card>
           </motion.div>
-
-          {isInstallable && (
-            <motion.div variants={item}>
-              <Card className="border-green-500/30 bg-green-500/5">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Download className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium text-foreground">Instalar App</span>
-                  </div>
-                  <Button size="sm" onClick={handleInstall} className="bg-green-600 hover:bg-green-700 text-white">
-                    Instalar
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
         </div>
       </div>
     </motion.div>
