@@ -155,14 +155,6 @@ export function StatisticsPage() {
     }
   }, [yearWorkDays, yearWeeks, rules, selectedMonth, monthNum])
 
-  const prevMonthData = useMemo(() => {
-    const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1
-    const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear
-    const prevDays = yearWorkDays.filter(d => new Date(d.date).getMonth() + 1 === prevMonth + 1 && d.date.startsWith(String(prevYear)))
-    const prevCalc = prevDays.length > 0 ? calculateMonthEarnings(prevDays, rules) : { total: 0 }
-    return { total: prevCalc.total, worked: prevDays.filter(d => d.worked).length, saturdays: prevDays.filter(d => new Date(d.date).getDay() === 6 && d.worked).length, absences: prevDays.filter(d => d.is_absence).length }
-  }, [yearWorkDays, rules, selectedMonth, selectedYear])
-
   const payment = useMemo(() => payments.find(p => p.month === monthNum && p.year === selectedYear), [payments, monthNum, selectedYear])
   const competencyStatus = useMemo(() => {
     if (!payment) return 'Competência em andamento'
