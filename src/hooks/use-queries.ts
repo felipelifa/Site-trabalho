@@ -386,10 +386,14 @@ export function useEnsureCompetency() {
   const { user } = useAuthContext()
 
   return useMutation({
-    mutationFn: () => competenciesService.ensureCurrentCompetency(user!.id),
+    mutationFn: async () => {
+      await salaryRulesService.ensureAllRules(user!.id)
+      await competenciesService.ensureCurrentCompetency(user!.id)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['competencies'] })
       queryClient.invalidateQueries({ queryKey: ['competency'] })
+      queryClient.invalidateQueries({ queryKey: ['salary-rules'] })
     },
   })
 }

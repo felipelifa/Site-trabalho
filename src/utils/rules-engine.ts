@@ -35,12 +35,26 @@ export interface DayCalculation {
 
 const DEFAULT_RULES: Omit<SalaryRule, 'id' | 'user_id' | 'created_at' | 'updated_at'>[] = [
   {
-    name: 'Semana Lisboa/Algarve',
+    name: 'Semana Lisboa',
     type: 'base',
     amount: 140,
     condition_type: 'week_city',
     condition_value: 'Lisboa',
     city: 'Lisboa',
+    day_of_week: null,
+    is_holiday: false,
+    is_vacation: false,
+    is_absence: false,
+    active: true,
+    priority: 10,
+  },
+  {
+    name: 'Semana Algarve',
+    type: 'base',
+    amount: 140,
+    condition_type: 'week_city',
+    condition_value: 'Algarve',
+    city: 'Algarve',
     day_of_week: null,
     is_holiday: false,
     is_vacation: false,
@@ -63,12 +77,26 @@ const DEFAULT_RULES: Omit<SalaryRule, 'id' | 'user_id' | 'created_at' | 'updated
     priority: 10,
   },
   {
-    name: 'Sábado Lisboa/Algarve',
+    name: 'Sábado Lisboa',
     type: 'overtime',
     amount: 110,
     condition_type: 'saturday',
     condition_value: 'Lisboa',
     city: 'Lisboa',
+    day_of_week: 6,
+    is_holiday: false,
+    is_vacation: false,
+    is_absence: false,
+    active: true,
+    priority: 20,
+  },
+  {
+    name: 'Sábado Algarve',
+    type: 'overtime',
+    amount: 110,
+    condition_type: 'saturday',
+    condition_value: 'Algarve',
+    city: 'Algarve',
     day_of_week: 6,
     is_holiday: false,
     is_vacation: false,
@@ -91,12 +119,26 @@ const DEFAULT_RULES: Omit<SalaryRule, 'id' | 'user_id' | 'created_at' | 'updated
     priority: 20,
   },
   {
-    name: 'Feriado Lisboa/Algarve',
+    name: 'Feriado Lisboa',
     type: 'bonus',
     amount: 110,
     condition_type: 'holiday',
     condition_value: 'Lisboa',
     city: 'Lisboa',
+    day_of_week: null,
+    is_holiday: true,
+    is_vacation: false,
+    is_absence: false,
+    active: true,
+    priority: 30,
+  },
+  {
+    name: 'Feriado Algarve',
+    type: 'bonus',
+    amount: 110,
+    condition_type: 'holiday',
+    condition_value: 'Algarve',
+    city: 'Algarve',
     day_of_week: null,
     is_holiday: true,
     is_vacation: false,
@@ -119,12 +161,26 @@ const DEFAULT_RULES: Omit<SalaryRule, 'id' | 'user_id' | 'created_at' | 'updated
     priority: 30,
   },
   {
-    name: 'Férias Lisboa/Algarve',
+    name: 'Férias Lisboa',
     type: 'bonus',
     amount: 110,
     condition_type: 'vacation',
     condition_value: 'Lisboa',
     city: 'Lisboa',
+    day_of_week: null,
+    is_holiday: false,
+    is_vacation: true,
+    is_absence: false,
+    active: true,
+    priority: 30,
+  },
+  {
+    name: 'Férias Algarve',
+    type: 'bonus',
+    amount: 110,
+    condition_type: 'vacation',
+    condition_value: 'Algarve',
+    city: 'Algarve',
     day_of_week: null,
     is_holiday: false,
     is_vacation: true,
@@ -197,6 +253,11 @@ export function getDefaultRules(userId: string): Omit<SalaryRule, 'id' | 'create
   }))
 }
 
+function findRuleId(rules: SalaryRule[], conditionType: string, city: string): string | null {
+  const rule = rules.find(r => r.active && r.condition_type === conditionType && r.condition_value === city)
+  return rule ? rule.id : null
+}
+
 export function calculateDayEarnings(
   workDay: WorkDay,
   rules: SalaryRule[],
@@ -208,38 +269,29 @@ export function calculateDayEarnings(
   const isSat = isSaturday(date)
 
   if (isSat && workDay.worked) {
-    const dest = workDay.destination
-    if (dest === 'Porto') {
-      total += 80
-      appliedRules.push('saturday-porto')
-    } else if (dest === 'Lisboa' || dest === 'Algarve') {
-      total += 110
-      appliedRules.push('saturday-lisboa-algarve')
-    }
+    const dest = workDay.destination || 'Porto'
+    const amount = dest === 'Porto' ? 80 : 110
+    total += amount
+    const ruleId = findRuleId(rules, 'saturday', dest)
+    if (ruleId) appliedRules.push(ruleId)
     return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
   }
 
   if (workDay.is_holiday && workDay.worked) {
-    const dest = workDay.destination
-    if (dest === 'Porto') {
-      total += 80
-      appliedRules.push('holiday-porto')
-    } else if (dest === 'Lisboa' || dest === 'Algarve') {
-      total += 110
-      appliedRules.push('holiday-lisboa-algarve')
-    }
+    const dest = workDay.destination || 'Porto'
+    const amount = dest === 'Porto' ? 80 : 110
+    total += amount
+    const ruleId = findRuleId(rules, 'holiday', dest)
+    if (ruleId) appliedRules.push(ruleId)
     return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
   }
 
   if (workDay.is_vacation) {
-    const dest = workDay.destination
-    if (dest === 'Lisboa' || dest === 'Algarve') {
-      total += 110
-      appliedRules.push('vacation-lisboa-algarve')
-    } else {
-      total += 80
-      appliedRules.push('vacation-porto')
-    }
+    const dest = workDay.destination || 'Porto'
+    const amount = dest === 'Porto' ? 80 : 110
+    total += amount
+    const ruleId = findRuleId(rules, 'vacation', dest)
+    if (ruleId) appliedRules.push(ruleId)
     return { date: workDay.date, total, meal_deducted: false, applied_rules: appliedRules }
   }
 
@@ -287,14 +339,7 @@ export function calculateWeekEarnings(
 
     for (const ruleId of dayCalc.applied_rules) {
       const rule = rules.find(r => r.id === ruleId)
-      let ruleName = ruleId
-      if (rule) ruleName = rule.name
-      else if (ruleId === 'saturday-porto') ruleName = 'Sábado Porto'
-      else if (ruleId === 'saturday-lisboa-algarve') ruleName = 'Sábado Lisboa/Algarve'
-      else if (ruleId === 'holiday-porto') ruleName = 'Feriado Porto'
-      else if (ruleId === 'holiday-lisboa-algarve') ruleName = 'Feriado Lisboa/Algarve'
-      else if (ruleId === 'vacation-porto') ruleName = 'Férias Porto'
-      else if (ruleId === 'vacation-lisboa-algarve') ruleName = 'Férias Lisboa/Algarve'
+      const ruleName = rule ? rule.name : ruleId
 
       breakdown.push({
         rule_id: ruleId,
@@ -435,14 +480,7 @@ export function calculateMonthEarnings(
 
     for (const ruleId of dayCalc.applied_rules) {
       const rule = rules.find(r => r.id === ruleId)
-      let ruleName = ruleId
-      if (rule) ruleName = rule.name
-      else if (ruleId === 'saturday-porto') ruleName = 'Sábado Porto'
-      else if (ruleId === 'saturday-lisboa-algarve') ruleName = 'Sábado Lisboa/Algarve'
-      else if (ruleId === 'holiday-porto') ruleName = 'Feriado Porto'
-      else if (ruleId === 'holiday-lisboa-algarve') ruleName = 'Feriado Lisboa/Algarve'
-      else if (ruleId === 'vacation-porto') ruleName = 'Férias Porto'
-      else if (ruleId === 'vacation-lisboa-algarve') ruleName = 'Férias Lisboa/Algarve'
+      const ruleName = rule ? rule.name : ruleId
 
       breakdown.push({
         rule_id: ruleId,

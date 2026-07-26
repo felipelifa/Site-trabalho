@@ -117,6 +117,50 @@ export const salaryRulesService = {
     if (error) throw error
     return true
   },
+
+  async ensureAllRules(userId: string) {
+    const { data: existing } = await supabase
+      .from('salary_rules')
+      .select('id, condition_type, condition_value')
+      .eq('user_id', userId)
+
+    if (!existing) return
+
+    const existingSet = new Set(
+      existing.map(r => `${r.condition_type}:${r.condition_value}`)
+    )
+
+    const missing: Tables['salary_rules']['Insert'][] = []
+
+    if (!existingSet.has('week_city:Algarve')) {
+      missing.push({ user_id: userId, name: 'Semana Algarve', type: 'base', amount: 140, condition_type: 'week_city', condition_value: 'Algarve', city: 'Algarve', is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 10 })
+    }
+    if (!existingSet.has('saturday:Algarve')) {
+      missing.push({ user_id: userId, name: 'Sábado Algarve', type: 'overtime', amount: 110, condition_type: 'saturday', condition_value: 'Algarve', city: 'Algarve', day_of_week: 6, is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 20 })
+    }
+    if (!existingSet.has('holiday:Algarve')) {
+      missing.push({ user_id: userId, name: 'Feriado Algarve', type: 'bonus', amount: 110, condition_type: 'holiday', condition_value: 'Algarve', city: 'Algarve', is_holiday: true, is_vacation: false, is_absence: false, active: true, priority: 30 })
+    }
+    if (!existingSet.has('vacation:Algarve')) {
+      missing.push({ user_id: userId, name: 'Férias Algarve', type: 'bonus', amount: 110, condition_type: 'vacation', condition_value: 'Algarve', city: 'Algarve', is_holiday: false, is_vacation: true, is_absence: false, active: true, priority: 30 })
+    }
+    if (!existingSet.has('holiday:Lisboa')) {
+      missing.push({ user_id: userId, name: 'Feriado Lisboa', type: 'bonus', amount: 110, condition_type: 'holiday', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: true, is_vacation: false, is_absence: false, active: true, priority: 30 })
+    }
+    if (!existingSet.has('vacation:Lisboa')) {
+      missing.push({ user_id: userId, name: 'Férias Lisboa', type: 'bonus', amount: 110, condition_type: 'vacation', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: false, is_vacation: true, is_absence: false, active: true, priority: 30 })
+    }
+    if (!existingSet.has('week_city:Lisboa')) {
+      missing.push({ user_id: userId, name: 'Semana Lisboa', type: 'base', amount: 140, condition_type: 'week_city', condition_value: 'Lisboa', city: 'Lisboa', is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 10 })
+    }
+    if (!existingSet.has('saturday:Lisboa')) {
+      missing.push({ user_id: userId, name: 'Sábado Lisboa', type: 'overtime', amount: 110, condition_type: 'saturday', condition_value: 'Lisboa', city: 'Lisboa', day_of_week: 6, is_holiday: false, is_vacation: false, is_absence: false, active: true, priority: 20 })
+    }
+
+    if (missing.length > 0) {
+      await supabase.from('salary_rules').insert(missing)
+    }
+  },
 }
 
 // Work Weeks operations
