@@ -20,7 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useWorkDaysByMonth, useWorkWeeks, useSettings, useSalaryRules } from '@/hooks/use-queries'
 import { useCreateWorkWeek, useUpsertWorkDay } from '@/hooks/use-queries'
 import { isNationalHoliday, isFafeMunicipalHoliday, getHolidayName } from '@/utils/holidays'
-import { calculateDayEarnings, calculateMonthEarnings } from '@/utils/rules-engine'
+import { calculateDayEarnings, calculateMonthEarnings, calculateWeekEarnings } from '@/utils/rules-engine'
 
 type FilterType = 'all' | 'worked' | 'saturday' | 'holiday' | 'absence' | 'vacation' | 'porto' | 'lisboa' | 'algarve' | 'pending'
 
@@ -443,44 +443,68 @@ export function CalendarPage() {
     const groups: { weekStart: Date; weekEnd: Date; days: Date[]; total: number; destination: string | null }[] = []
     let currentWeekStart = startOfWeek(days[0] || new Date(), { weekStartsOn: 1 })
     let currentWeekDays: Date[] = []
-    let weekTotal = 0
+    let currentWeekWorkDays: typeof workDays = []
     let weekDest: string | null = null
 
     days.forEach(date => {
       const weekStart = startOfWeek(date, { weekStartsOn: 1 })
       if (weekStart.getTime() !== currentWeekStart.getTime()) {
         if (currentWeekDays.length > 0) {
+          const weekCalc = calculateWeekEarnings(
+            currentWeekWorkDays.map(d => ({
+              id: d.id || '', user_id: d.user_id || '', week_id: d.week_id || '',
+              date: d.date, day_of_week: d.day_of_week, worked: d.worked,
+              destination: d.destination || '', slept_away: d.slept_away ?? false,
+              is_holiday: d.is_holiday, is_vacation: d.is_vacation,
+              is_absence: d.is_absence, absence_type: d.absence_type || '',
+              earned: 0, notes: d.notes || '', created_at: '', updated_at: '',
+            })) as never[],
+            rules
+          )
           groups.push({
             weekStart: currentWeekStart,
             weekEnd: endOfWeek(currentWeekStart, { weekStartsOn: 1 }),
             days: currentWeekDays,
-            total: weekTotal,
+            total: weekCalc.total,
             destination: weekDest,
           })
         }
         currentWeekStart = weekStart
         currentWeekDays = []
-        weekTotal = 0
+        currentWeekWorkDays = []
         weekDest = null
       }
       currentWeekDays.push(date)
       const info = getDayInfo(date)
-      weekTotal += info.earned
+      const dateStr = format(date, 'yyyy-MM-dd')
+      const existing = workDaysMap.get(dateStr)
+      if (existing) currentWeekWorkDays.push(existing)
       if (info.destination) weekDest = info.destination
     })
 
     if (currentWeekDays.length > 0) {
+      const weekCalc = calculateWeekEarnings(
+        currentWeekWorkDays.map(d => ({
+          id: d.id || '', user_id: d.user_id || '', week_id: d.week_id || '',
+          date: d.date, day_of_week: d.day_of_week, worked: d.worked,
+          destination: d.destination || '', slept_away: d.slept_away ?? false,
+          is_holiday: d.is_holiday, is_vacation: d.is_vacation,
+          is_absence: d.is_absence, absence_type: d.absence_type || '',
+          earned: 0, notes: d.notes || '', created_at: '', updated_at: '',
+        })) as never[],
+        rules
+      )
       groups.push({
         weekStart: currentWeekStart,
         weekEnd: endOfWeek(currentWeekStart, { weekStartsOn: 1 }),
         days: currentWeekDays,
-        total: weekTotal,
+        total: weekCalc.total,
         destination: weekDest,
       })
     }
 
     return groups
-  }, [days, workDays, dayData])
+  }, [days, workDays, dayData, rules, workDaysMap])
 
   const comparison = useMemo(() => {
     const diff = monthStats.totalEarned - monthStats.prevTotal
