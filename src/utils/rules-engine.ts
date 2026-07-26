@@ -321,14 +321,23 @@ export function calculateWeekEarnings(
   const weekDestinos = new Set(workDays.filter(d => d.worked && d.destination).map(d => d.destination))
   for (const rule of weekRules) {
     if (weekDestinos.has(rule.condition_value)) {
-      total += rule.amount
-      breakdown.push({
-        rule_id: rule.id,
-        rule_name: rule.name,
-        amount: rule.amount,
-        applied: true,
-        reason: `${rule.name} - semana`,
-      })
+      const dailyBonus = rule.amount / 5
+      const holidaysAndVacations = workDays.filter(d =>
+        d.worked && d.destination === rule.condition_value && (d.is_holiday || d.is_vacation)
+      ).length
+      const adjustedAmount = rule.amount - (dailyBonus * holidaysAndVacations)
+      if (adjustedAmount > 0) {
+        total += adjustedAmount
+        breakdown.push({
+          rule_id: rule.id,
+          rule_name: rule.name,
+          amount: adjustedAmount,
+          applied: true,
+          reason: holidaysAndVacations > 0
+            ? `${rule.name} - ${rule.amount}€ - ${holidaysAndVacations} dia(s) feriado/férias (-€${dailyBonus * holidaysAndVacations})`
+            : `${rule.name} - semana`,
+        })
+      }
     }
   }
 
@@ -377,14 +386,23 @@ export function calculateMonthEarnings(
     const weekDestinos = new Set(weekDays.filter(d => d.worked && d.destination).map(d => d.destination))
     for (const rule of weekRules) {
       if (weekDestinos.has(rule.condition_value)) {
-        total += rule.amount
-        breakdown.push({
-          rule_id: rule.id,
-          rule_name: rule.name,
-          amount: rule.amount,
-          applied: true,
-          reason: `${rule.name} - semana`,
-        })
+        const dailyBonus = rule.amount / 5
+        const holidaysAndVacations = weekDays.filter(d =>
+          d.worked && d.destination === rule.condition_value && (d.is_holiday || d.is_vacation)
+        ).length
+        const adjustedAmount = rule.amount - (dailyBonus * holidaysAndVacations)
+        if (adjustedAmount > 0) {
+          total += adjustedAmount
+          breakdown.push({
+            rule_id: rule.id,
+            rule_name: rule.name,
+            amount: adjustedAmount,
+            applied: true,
+            reason: holidaysAndVacations > 0
+              ? `${rule.name} - ${rule.amount}€ - ${holidaysAndVacations} dia(s) feriado/férias (-€${dailyBonus * holidaysAndVacations})`
+              : `${rule.name} - semana`,
+          })
+        }
       }
     }
   }
