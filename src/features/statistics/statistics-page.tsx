@@ -67,7 +67,7 @@ export function StatisticsPage() {
         ? calculateMonthEarnings(monthWorkDays, rules)
         : { total: 0, breakdown: [] }
       return {
-        name: month,
+        name: MONTHS_SHORT[index],
         fullName: MONTHS_FULL[index],
         valor: calc.total,
         semanas: monthWeeks.length,
@@ -167,7 +167,7 @@ export function StatisticsPage() {
                   className={`w-full text-left px-3 py-1.5 text-sm rounded-lg transition-colors ${selectedMonth === null ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>
                   Todos os meses
                 </button>
-                {MONTHS_SHORT.map((month, i) => (
+                {MONTHS_SHORT.map((_m, i) => (
                   <button key={i} onClick={() => { setSelectedMonth(i); setShowMonthPicker(false) }}
                     className={`w-full text-left px-3 py-1.5 text-sm rounded-lg transition-colors ${selectedMonth === i ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>
                     {MONTHS_FULL[i]}
