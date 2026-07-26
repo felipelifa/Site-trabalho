@@ -364,7 +364,7 @@ export function calculateWeekEarnings(
   }
 
   const weekRules = rules.filter(r => r.active && r.condition_type === 'week_city')
-  const weekDestinos = new Set(workDays.filter(d => d.worked && d.destination).map(d => d.destination))
+  const weekDestinos = new Set(workDays.filter(d => d.worked && d.destination && new Date(d.date).getDay() !== 6).map(d => d.destination))
   for (const rule of weekRules) {
     if (weekDestinos.has(rule.condition_value)) {
       const dailyBonus = rule.amount / 5
@@ -443,7 +443,7 @@ export function calculateMonthEarnings(
   const weekIds = new Set(workDays.map(d => d.week_id).filter(Boolean))
   for (const weekId of weekIds) {
     const weekDays = workDays.filter(d => d.week_id === weekId)
-    const weekDestinos = new Set(weekDays.filter(d => d.worked && d.destination).map(d => d.destination))
+    const weekDestinos = new Set(weekDays.filter(d => d.worked && d.destination && new Date(d.date).getDay() !== 6).map(d => d.destination))
     for (const rule of weekRules) {
       if (weekDestinos.has(rule.condition_value)) {
         const dailyBonus = rule.amount / 5
