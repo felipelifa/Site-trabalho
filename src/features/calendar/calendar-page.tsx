@@ -352,7 +352,6 @@ export function CalendarPage() {
         break
     }
   }
-  }
 
   const handleSetDestination = (dest: string) => {
     updateDay({ destination: dest })
