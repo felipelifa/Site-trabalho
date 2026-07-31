@@ -8,7 +8,6 @@ import { AuthLayout } from '@/components/layout/auth-layout'
 const LoginPage = lazy(() => import('@/features/auth/login-page').then(m => ({ default: m.LoginPage })))
 const RegisterPage = lazy(() => import('@/features/auth/register-page').then(m => ({ default: m.RegisterPage })))
 const RoleSelectionPage = lazy(() => import('@/features/auth/role-selection-page').then(m => ({ default: m.RoleSelectionPage })))
-const DashboardPage = lazy(() => import('@/features/dashboard/dashboard-page').then(m => ({ default: m.DashboardPage })))
 const CalendarPage = lazy(() => import('@/features/calendar/calendar-page').then(m => ({ default: m.CalendarPage })))
 const StatisticsPage = lazy(() => import('@/features/statistics/statistics-page').then(m => ({ default: m.StatisticsPage })))
 const NotesPage = lazy(() => import('@/features/notes/notes-page').then(m => ({ default: m.NotesPage })))
