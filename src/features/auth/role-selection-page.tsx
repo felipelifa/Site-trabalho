@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { User, Shield, Lock, Loader2, ArrowLeft } from 'lucide-react'
@@ -12,19 +12,11 @@ const ADMIN_PIN = '1234'
 
 export function RoleSelectionPage() {
   const navigate = useNavigate()
-  const { user, setRole, role } = useAuthContext()
+  const { user, setRole } = useAuthContext()
   const [selectedRole, setSelectedRole] = useState<'employee' | 'admin' | null>(null)
   const [pin, setPin] = useState('')
   const [pinError, setPinError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-
-  useEffect(() => {
-    if (role === 'admin') {
-      navigate('/admin', { replace: true })
-    } else if (role === 'employee') {
-      navigate('/', { replace: true })
-    }
-  }, [role, navigate])
 
   const handleSelectEmployee = async () => {
     if (!user) return
