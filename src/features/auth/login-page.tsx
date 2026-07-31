@@ -19,7 +19,7 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { signInWithEmail, signInWithMagicLink, role } = useAuthContext()
+  const { signInWithEmail, signInWithMagicLink } = useAuthContext()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [magicLinkSent, setMagicLinkSent] = useState(false)
