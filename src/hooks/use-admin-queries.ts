@@ -8,6 +8,7 @@ import {
   operationHistoryService,
   employeeDailyRecordsService,
   adminStatsService,
+  profilesService,
 } from '@/services/admin-api'
 
 // =====================================================
@@ -121,6 +122,16 @@ export function useSearchEmployees(query: string) {
     queryKey: ['admin-employees-search', user?.id, query],
     queryFn: () => employeesService.searchByName(user!.id, query),
     enabled: !!user && query.length >= 2,
+  })
+}
+
+// =====================================================
+// PROFILES HOOKS
+// =====================================================
+export function useAllProfiles() {
+  return useQuery({
+    queryKey: ['admin-profiles'],
+    queryFn: () => profilesService.getAll(),
   })
 }
 

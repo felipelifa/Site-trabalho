@@ -9,6 +9,7 @@ const LoginPage = lazy(() => import('@/features/auth/login-page').then(m => ({ d
 const RegisterPage = lazy(() => import('@/features/auth/register-page').then(m => ({ default: m.RegisterPage })))
 const RoleSelectionPage = lazy(() => import('@/features/auth/role-selection-page').then(m => ({ default: m.RoleSelectionPage })))
 const CalendarPage = lazy(() => import('@/features/calendar/calendar-page').then(m => ({ default: m.CalendarPage })))
+const DashboardPage = lazy(() => import('@/features/dashboard/dashboard-page').then(m => ({ default: m.DashboardPage })))
 const StatisticsPage = lazy(() => import('@/features/statistics/statistics-page').then(m => ({ default: m.StatisticsPage })))
 const NotesPage = lazy(() => import('@/features/notes/notes-page').then(m => ({ default: m.NotesPage })))
 const ChecklistsPage = lazy(() => import('@/features/checklists/checklists-page').then(m => ({ default: m.ChecklistsPage })))
@@ -124,7 +125,7 @@ function AppRoutes() {
         >
           <Route index element={
             role === 'admin' ? <AdminDashboardPage /> :
-            role === 'employee' ? <EmployeeViewPage /> :
+            role === 'employee' ? <DashboardPage /> :
             <Navigate to="/select-role" replace />
           } />
           <Route path="calendar" element={<CalendarPage />} />

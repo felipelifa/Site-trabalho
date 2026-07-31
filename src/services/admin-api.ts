@@ -48,6 +48,20 @@ export const vehiclesService = {
 }
 
 // =====================================================
+// PROFILES SERVICE (all registered users)
+// =====================================================
+export const profilesService = {
+  async getAll() {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('full_name', { ascending: true })
+    if (error) throw error
+    return data
+  },
+}
+
+// =====================================================
 // EMPLOYEES SERVICE
 // =====================================================
 export const employeesService = {
