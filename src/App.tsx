@@ -13,6 +13,11 @@ const StatisticsPage = lazy(() => import('@/features/statistics/statistics-page'
 const NotesPage = lazy(() => import('@/features/notes/notes-page').then(m => ({ default: m.NotesPage })))
 const ChecklistsPage = lazy(() => import('@/features/checklists/checklists-page').then(m => ({ default: m.ChecklistsPage })))
 const RemindersPage = lazy(() => import('@/features/reminders/reminders-page').then(m => ({ default: m.RemindersPage })))
+const AdminDashboardPage = lazy(() => import('@/features/admin/admin-dashboard-page').then(m => ({ default: m.AdminDashboardPage })))
+const EmployeesPage = lazy(() => import('@/features/admin/employees-page').then(m => ({ default: m.EmployeesPage })))
+const TeamsPage = lazy(() => import('@/features/admin/teams-page').then(m => ({ default: m.TeamsPage })))
+const PlanningPage = lazy(() => import('@/features/admin/planning-page').then(m => ({ default: m.PlanningPage })))
+const EmployeeViewPage = lazy(() => import('@/features/admin/employee-view-page').then(m => ({ default: m.EmployeeViewPage })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -98,6 +103,13 @@ function AppRoutes() {
           <Route path="notes" element={<NotesPage />} />
           <Route path="checklists" element={<ChecklistsPage />} />
           <Route path="reminders" element={<RemindersPage />} />
+          <Route path="my-work" element={<EmployeeViewPage />} />
+          <Route path="admin">
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="employees" element={<EmployeesPage />} />
+            <Route path="teams" element={<TeamsPage />} />
+            <Route path="planning" element={<PlanningPage />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

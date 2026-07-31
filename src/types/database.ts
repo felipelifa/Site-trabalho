@@ -730,6 +730,336 @@ export interface Database {
         }
         Relationships: []
       }
+      vehicles: {
+        Row: {
+          id: string
+          admin_id: string
+          name: string
+          license_plate: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          admin_id: string
+          name: string
+          license_plate?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          admin_id?: string
+          name?: string
+          license_plate?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          id: string
+          admin_id: string
+          user_id: string | null
+          full_name: string
+          phone: string | null
+          role: string
+          city: string | null
+          status: 'active' | 'vacation' | 'away' | 'inactive'
+          photo_url: string | null
+          last_access: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          admin_id: string
+          user_id?: string | null
+          full_name: string
+          phone?: string | null
+          role?: string
+          city?: string | null
+          status?: 'active' | 'vacation' | 'away' | 'inactive'
+          photo_url?: string | null
+          last_access?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          admin_id?: string
+          user_id?: string | null
+          full_name?: string
+          phone?: string | null
+          role?: string
+          city?: string | null
+          status?: 'active' | 'vacation' | 'away' | 'inactive'
+          photo_url?: string | null
+          last_access?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      teams: {
+        Row: {
+          id: string
+          admin_id: string
+          name: string
+          color: string
+          leader_id: string | null
+          vehicle_id: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          admin_id: string
+          name: string
+          color?: string
+          leader_id?: string | null
+          vehicle_id?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          admin_id?: string
+          name?: string
+          color?: string
+          leader_id?: string | null
+          vehicle_id?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teams_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      team_members: {
+        Row: {
+          id: string
+          team_id: string
+          employee_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          employee_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          team_id?: string
+          employee_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      operations: {
+        Row: {
+          id: string
+          admin_id: string
+          team_id: string
+          week_number: number
+          year: number
+          destination: 'Porto' | 'Lisboa' | 'Algarve'
+          company_name: string | null
+          company_location: string | null
+          leader_id: string | null
+          vehicle_id: string | null
+          notes: string | null
+          status: 'draft' | 'published'
+          published_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          admin_id: string
+          team_id: string
+          week_number: number
+          year: number
+          destination: 'Porto' | 'Lisboa' | 'Algarve'
+          company_name?: string | null
+          company_location?: string | null
+          leader_id?: string | null
+          vehicle_id?: string | null
+          notes?: string | null
+          status?: 'draft' | 'published'
+          published_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          admin_id?: string
+          team_id?: string
+          week_number?: number
+          year?: number
+          destination?: 'Porto' | 'Lisboa' | 'Algarve'
+          company_name?: string | null
+          company_location?: string | null
+          leader_id?: string | null
+          vehicle_id?: string | null
+          notes?: string | null
+          status?: 'draft' | 'published'
+          published_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operations_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      operation_history: {
+        Row: {
+          id: string
+          operation_id: string
+          admin_id: string
+          field_name: string
+          old_value: string | null
+          new_value: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          operation_id: string
+          admin_id: string
+          field_name: string
+          old_value?: string | null
+          new_value?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          operation_id?: string
+          admin_id?: string
+          field_name?: string
+          old_value?: string | null
+          new_value?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operation_history_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "operations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      employee_daily_records: {
+        Row: {
+          id: string
+          employee_id: string
+          operation_id: string | null
+          date: string
+          confirmed_presence: boolean
+          work_started: boolean
+          work_ended: boolean
+          slept_away: boolean
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          operation_id?: string | null
+          date: string
+          confirmed_presence?: boolean
+          work_started?: boolean
+          work_ended?: boolean
+          slept_away?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          operation_id?: string | null
+          date?: string
+          confirmed_presence?: boolean
+          work_started?: boolean
+          work_ended?: boolean
+          slept_away?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_daily_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_daily_records_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "operations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
