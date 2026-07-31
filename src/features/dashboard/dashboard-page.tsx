@@ -112,6 +112,8 @@ export function DashboardPage() {
 
   const workedDaysMonth = monthWorkDays.filter(d => d.worked).length
   const absenceDaysMonth = monthWorkDays.filter(d => d.is_absence).length
+  const justifiedAbsenceDaysMonth = monthWorkDays.filter(d => d.is_absence && d.absence_type === 'justified').length
+  const normalAbsenceDaysMonth = absenceDaysMonth - justifiedAbsenceDaysMonth
   const vacationDaysMonth = monthWorkDays.filter(d => d.is_vacation).length
   const saturdaysMonth = monthWorkDays.filter(d => {
     const date = new Date(d.date)
@@ -227,7 +229,7 @@ export function DashboardPage() {
     const items: { label: string; amount: number; positive: boolean }[] = []
 
     const base = 820
-    const absenceTotal = absenceDaysMonth * 80
+    const absenceTotal = (normalAbsenceDaysMonth * 80) + (justifiedAbsenceDaysMonth * 40)
     const baseNet = base - absenceTotal
 
     items.push({ label: 'Salário Base', amount: baseNet, positive: true })
@@ -261,7 +263,7 @@ export function DashboardPage() {
     }
 
     return items.filter(i => i.amount !== 0)
-  }, [monthEarnings, workedDaysMonth, absenceDaysMonth])
+  }, [monthEarnings, workedDaysMonth, absenceDaysMonth, normalAbsenceDaysMonth, justifiedAbsenceDaysMonth])
 
   const weekDayColors: Record<string, string> = {
     worked: 'bg-green-500',

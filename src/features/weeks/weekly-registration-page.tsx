@@ -373,6 +373,12 @@ export function WeeklyRegistrationPage() {
     setSelectedDayIndex(null)
   }
 
+  const handleRegisterJustifiedAbsence = () => {
+    if (selectedDayIndex === null) return
+    updateDay(selectedDayIndex, { worked: false, isHoliday: false, isVacation: false, isAbsence: true, absenceType: 'justified' })
+    setSelectedDayIndex(null)
+  }
+
   const handleRegisterVacation = () => {
     if (selectedDayIndex === null) return
     updateDay(selectedDayIndex, { worked: false, isHoliday: false, isVacation: true, isAbsence: false, absenceType: '' })
@@ -551,6 +557,15 @@ export function WeeklyRegistrationPage() {
               >
                 <X className="w-3.5 h-3.5 mr-1.5" />
                 Registrar Falta
+              </Button>
+              <Button
+                variant={selectedDayIndex !== null ? 'default' : 'outline'}
+                size="sm"
+                onClick={handleRegisterJustifiedAbsence}
+                disabled={selectedDayIndex === null}
+              >
+                <X className="w-3.5 h-3.5 mr-1.5" />
+                Falta Justificada
               </Button>
               <Button
                 variant={selectedDayIndex !== null ? 'default' : 'outline'}

@@ -211,7 +211,7 @@ export function Sidebar({ collapsed, onToggle, isMobile, mobileOpen, onMobileClo
         <button
           onClick={() => {
             if (user) {
-              supabase.from('profiles').update({ role: null }).eq('user_id', user.id)
+              supabase.from('profiles').update({ role: 'user' }).eq('user_id', user.id)
             }
             setRole(null)
             navigate('/select-role', { replace: true })

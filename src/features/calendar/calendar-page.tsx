@@ -24,7 +24,7 @@ import { calculateDayEarnings, calculateMonthEarnings, calculateWeekEarnings } f
 
 type FilterType = 'all' | 'worked' | 'saturday' | 'holiday' | 'absence' | 'vacation' | 'porto' | 'lisboa' | 'algarve' | 'pending'
 
-type DayStatus = 'worked' | 'absence' | 'vacation' | 'off'
+type DayStatus = 'worked' | 'absence' | 'justified' | 'vacation' | 'off'
 
 interface DayData {
   id?: string
@@ -50,7 +50,10 @@ function getWeekNumber(date: Date): number {
 
 function getDayStatus(day: DayData): DayStatus {
   if (day.isVacation) return 'vacation'
-  if (day.isAbsence) return 'absence'
+  if (day.isAbsence) {
+    if (day.absenceType === 'justified') return 'justified'
+    return 'absence'
+  }
   if (day.worked) return 'worked'
   return 'off'
 }
@@ -61,6 +64,7 @@ const STATUS_CONFIG_CALENDAR: Record<string, { color: string; bg: string; border
   holiday: { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: '🎉', label: 'Feriado' },
   vacation: { color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: '✈️', label: 'Férias' },
   absence: { color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: '❌', label: 'Falta' },
+  justified: { color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', icon: '⚠️', label: 'Falta Justificada' },
   weekend: { color: 'text-muted-foreground', bg: 'bg-muted/50', border: 'border-border', icon: '⚪', label: 'Fim de semana' },
   pending: { color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', icon: '🟡', label: 'Pendente' },
   none: { color: 'text-muted-foreground', bg: 'bg-background', border: 'border-border', icon: '', label: '' },
@@ -337,13 +341,17 @@ export function CalendarPage() {
       case 'absence':
         updateDay({ worked: false, isHoliday: false, isVacation: false, isAbsence: true, absenceType: 'other' })
         break
+      case 'justified':
+        updateDay({ worked: false, isHoliday: false, isVacation: false, isAbsence: true, absenceType: 'justified' })
+        break
       case 'vacation':
-        updateDay({ worked: false, isHoliday: false, isVacation: true, isAbsence: false, absenceType: '' })
+        updateDay({ worked: false, isVacation: true, isAbsence: false, absenceType: '' })
         break
       case 'off':
         updateDay({ worked: false, isVacation: false, isAbsence: false, absenceType: '' })
         break
     }
+  }
   }
 
   const handleSetDestination = (dest: string) => {
@@ -724,10 +732,11 @@ export function CalendarPage() {
 
                     <div>
                       <p className="text-xs text-muted-foreground mb-2">Status do Dia</p>
-                      <div className="grid grid-cols-4 gap-1.5">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {([
                           { key: 'worked' as DayStatus, label: 'Trabalhou', icon: '🟢', activeBg: 'bg-green-500' },
                           { key: 'absence' as DayStatus, label: 'Falta', icon: '🔴', activeBg: 'bg-red-500' },
+                          { key: 'justified' as DayStatus, label: 'F. Justificada', icon: '🟠', activeBg: 'bg-orange-500' },
                           { key: 'vacation' as DayStatus, label: 'Férias', icon: '🟡', activeBg: 'bg-yellow-500' },
                           { key: 'off' as DayStatus, label: 'Folga', icon: '⚪', activeBg: 'bg-gray-500' },
                         ]).map(opt => {

@@ -217,6 +217,20 @@ const DEFAULT_RULES: Omit<SalaryRule, 'id' | 'user_id' | 'created_at' | 'updated
     priority: 40,
   },
   {
+    name: 'Falta justificada',
+    type: 'deduction',
+    amount: -40,
+    condition_type: 'absence',
+    condition_value: 'justified',
+    city: null,
+    day_of_week: null,
+    is_holiday: false,
+    is_vacation: false,
+    is_absence: true,
+    active: true,
+    priority: 35,
+  },
+  {
     name: 'Falta segunda',
     type: 'deduction',
     amount: -240,
@@ -296,17 +310,22 @@ export function calculateDayEarnings(
   }
 
   if (workDay.is_absence) {
+    const absenceType = workDay.absence_type || 'normal'
     const sortedRules = [...rules].filter(r => r.active && r.is_absence).sort((a, b) => b.priority - a.priority)
     for (const rule of sortedRules) {
-      if (rule.condition_value === 'monday' && workDay.day_of_week === 1) {
+      if (absenceType === 'justified' && rule.condition_value === 'justified') {
         total += rule.amount
         appliedRules.push(rule.id)
         break
-      } else if (rule.condition_value === 'friday' && workDay.day_of_week === 5) {
+      } else if (absenceType === 'monday' && rule.condition_value === 'monday' && workDay.day_of_week === 1) {
         total += rule.amount
         appliedRules.push(rule.id)
         break
-      } else if (rule.condition_value === 'normal') {
+      } else if (absenceType === 'friday' && rule.condition_value === 'friday' && workDay.day_of_week === 5) {
+        total += rule.amount
+        appliedRules.push(rule.id)
+        break
+      } else if (absenceType !== 'justified' && absenceType !== 'monday' && absenceType !== 'friday' && rule.condition_value === 'normal') {
         total += rule.amount
         appliedRules.push(rule.id)
         break
@@ -401,15 +420,18 @@ export function calculateMonthEarnings(
   let mondayAbsences = 0
   let fridayAbsences = 0
   let normalAbsences = 0
+  let justifiedAbsences = 0
   for (const workDay of workDays) {
     if (workDay.is_absence) {
-      if (workDay.day_of_week === 1) mondayAbsences++
+      const absenceType = workDay.absence_type || 'normal'
+      if (absenceType === 'justified') justifiedAbsences++
+      else if (workDay.day_of_week === 1) mondayAbsences++
       else if (workDay.day_of_week === 5) fridayAbsences++
       else normalAbsences++
     }
   }
 
-  const totalAbsenceDeduction = (mondayAbsences * 240) + (fridayAbsences * 240) + (normalAbsences * 80)
+  const totalAbsenceDeduction = (mondayAbsences * 240) + (fridayAbsences * 240) + (normalAbsences * 80) + (justifiedAbsences * 40)
   const baseAfterAbsences = BASE_SALARY - totalAbsenceDeduction
 
   let absenceReason = 'Salário Base fixo'
@@ -418,6 +440,7 @@ export function calculateMonthEarnings(
     if (mondayAbsences > 0) parts.push(`${mondayAbsences} seg × 240€`)
     if (fridayAbsences > 0) parts.push(`${fridayAbsences} sex × 240€`)
     if (normalAbsences > 0) parts.push(`${normalAbsences} falta(s) × 80€`)
+    if (justifiedAbsences > 0) parts.push(`${justifiedAbsences} falta(s) justificada(s) × 40€`)
     absenceReason = `${BASE_SALARY}€ - ${parts.join(' - ')}`
   }
 
