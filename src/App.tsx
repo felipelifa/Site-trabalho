@@ -7,6 +7,7 @@ import { AuthLayout } from '@/components/layout/auth-layout'
 
 const LoginPage = lazy(() => import('@/features/auth/login-page').then(m => ({ default: m.LoginPage })))
 const RegisterPage = lazy(() => import('@/features/auth/register-page').then(m => ({ default: m.RegisterPage })))
+const RoleSelectionPage = lazy(() => import('@/features/auth/role-selection-page').then(m => ({ default: m.RoleSelectionPage })))
 const DashboardPage = lazy(() => import('@/features/dashboard/dashboard-page').then(m => ({ default: m.DashboardPage })))
 const CalendarPage = lazy(() => import('@/features/calendar/calendar-page').then(m => ({ default: m.CalendarPage })))
 const StatisticsPage = lazy(() => import('@/features/statistics/statistics-page').then(m => ({ default: m.StatisticsPage })))
@@ -72,7 +73,23 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { role, loading } = useAuthContext()
+
+  if (loading) {
+    return <PageLoader />
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />
+  }
+
+  return <>{children}</>
+}
+
 function AppRoutes() {
+  const { role } = useAuthContext()
+
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
@@ -90,6 +107,15 @@ function AppRoutes() {
         </Route>
 
         <Route
+          path="/select-role"
+          element={
+            <ProtectedRoute>
+              <RoleSelectionPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/"
           element={
             <ProtectedRoute>
@@ -97,14 +123,22 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<DashboardPage />} />
+          <Route index element={
+            role === 'admin' ? <AdminDashboardPage /> :
+            role === 'employee' ? <EmployeeViewPage /> :
+            <Navigate to="/select-role" replace />
+          } />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="statistics" element={<StatisticsPage />} />
           <Route path="notes" element={<NotesPage />} />
           <Route path="checklists" element={<ChecklistsPage />} />
           <Route path="reminders" element={<RemindersPage />} />
           <Route path="my-work" element={<EmployeeViewPage />} />
-          <Route path="admin">
+          <Route path="admin" element={
+            <AdminRoute>
+              <AppLayout />
+            </AdminRoute>
+          }>
             <Route index element={<AdminDashboardPage />} />
             <Route path="employees" element={<EmployeesPage />} />
             <Route path="teams" element={<TeamsPage />} />

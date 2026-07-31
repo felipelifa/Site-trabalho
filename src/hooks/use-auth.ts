@@ -7,6 +7,7 @@ interface AuthState {
   session: Session | null
   loading: boolean
   error: AuthError | null
+  role: string | null
 }
 
 export function useAuth() {
@@ -15,32 +16,50 @@ export function useAuth() {
     session: null,
     loading: true,
     error: null,
+    role: null,
   })
 
+  const fetchRole = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('user_id', userId)
+      .maybeSingle()
+    return data?.role || null
+  }, [])
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error) {
-        setState({ user: null, session: null, loading: false, error })
+        setState({ user: null, session: null, loading: false, error, role: null })
         return
       }
+      const role = session?.user ? await fetchRole(session.user.id) : null
       setState({
         user: session?.user ?? null,
         session,
         loading: false,
         error: null,
+        role,
       })
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const role = session?.user ? await fetchRole(session.user.id) : null
       setState({
         user: session?.user ?? null,
         session,
         loading: false,
         error: null,
+        role,
       })
     })
 
     return () => subscription.unsubscribe()
+  }, [fetchRole])
+
+  const setRole = useCallback((role: string | null) => {
+    setState(prev => ({ ...prev, role }))
   }, [])
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
@@ -75,11 +94,13 @@ export function useAuth() {
         }
       }
 
+      const role = data.user ? await fetchRole(data.user.id) : null
       setState({
         user: data.user,
         session: data.session,
         loading: false,
         error: null,
+        role,
       })
       return { success: true, data }
     } catch (err) {
@@ -87,7 +108,7 @@ export function useAuth() {
       setState(prev => ({ ...prev, loading: false, error }))
       return { success: false, error }
     }
-  }, [])
+  }, [fetchRole])
 
   const signUpWithEmail = useCallback(async (email: string, password: string, name?: string) => {
     setState(prev => ({ ...prev, loading: true, error: null }))
@@ -117,11 +138,13 @@ export function useAuth() {
         }
       }
 
+      const role = data.user ? await fetchRole(data.user.id) : null
       setState({
         user: data.user,
         session: data.session,
         loading: false,
         error: null,
+        role,
       })
       return { success: true, data }
     } catch (err) {
@@ -129,7 +152,7 @@ export function useAuth() {
       setState(prev => ({ ...prev, loading: false, error }))
       return { success: false, error }
     }
-  }, [])
+  }, [fetchRole])
 
   const signInWithMagicLink = useCallback(async (email: string) => {
     setState(prev => ({ ...prev, loading: true, error: null }))
@@ -158,12 +181,14 @@ export function useAuth() {
       session: null,
       loading: false,
       error: null,
+      role: null,
     })
     return { success: true }
   }, [])
 
   return {
     ...state,
+    setRole,
     signInWithEmail,
     signUpWithEmail,
     signInWithMagicLink,

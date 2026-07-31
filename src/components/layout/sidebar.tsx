@@ -52,7 +52,7 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, isMobile, mobileOpen, onMobileClose }: SidebarProps) {
   const location = useLocation()
-  const { signOut } = useAuthContext()
+  const { signOut, role } = useAuthContext()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   const toggleTheme = () => {
@@ -100,7 +100,7 @@ export function Sidebar({ collapsed, onToggle, isMobile, mobileOpen, onMobileClo
       </div>
 
       <nav className="flex-1 p-2 space-y-1">
-        {navigation.map((item) => {
+        {(role === 'employee' || role === null) && navigation.map((item) => {
           const isActive = location.pathname === item.href
           return (
             <Link
@@ -127,73 +127,81 @@ export function Sidebar({ collapsed, onToggle, isMobile, mobileOpen, onMobileClo
           )
         })}
 
-        {!collapsed && (
-          <div className="pt-2 mt-2 border-t border-border">
-            <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Administração
-            </p>
-          </div>
-        )}
-        {adminNavigation.map((item) => {
-          const isActive = location.pathname === item.href
-          return (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-            >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-sm font-medium"
+        {role === 'employee' && (
+          <>
+            {!collapsed && (
+              <div className="pt-2 mt-2 border-t border-border">
+                <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Funcionário
+                </p>
+              </div>
+            )}
+            {employeeNavigation.map((item) => {
+              const isActive = location.pathname === item.href
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
                 >
-                  {item.name}
-                </motion.span>
-              )}
-            </Link>
-          )
-        })}
+                  <item.icon className="w-5 h-5 flex-shrink-0" />
+                  {!collapsed && (
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-sm font-medium"
+                    >
+                      {item.name}
+                    </motion.span>
+                  )}
+                </Link>
+              )
+            })}
+          </>
+        )}
 
-        {!collapsed && (
-          <div className="pt-2 mt-2 border-t border-border">
-            <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Funcionário
-            </p>
-          </div>
-        )}
-        {employeeNavigation.map((item) => {
-          const isActive = location.pathname === item.href
-          return (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-            >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-sm font-medium"
+        {role === 'admin' && (
+          <>
+            {!collapsed && (
+              <div className="pt-2 mt-2 border-t border-border">
+                <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Administração
+                </p>
+              </div>
+            )}
+            {adminNavigation.map((item) => {
+              const isActive = location.pathname === item.href
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
                 >
-                  {item.name}
-                </motion.span>
-              )}
-            </Link>
-          )
-        })}
+                  <item.icon className="w-5 h-5 flex-shrink-0" />
+                  {!collapsed && (
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-sm font-medium"
+                    >
+                      {item.name}
+                    </motion.span>
+                  )}
+                </Link>
+              )
+            })}
+          </>
+        )}
       </nav>
 
       <div className="p-2 border-t border-border space-y-1">

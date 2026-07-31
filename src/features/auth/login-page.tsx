@@ -19,7 +19,7 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { signInWithEmail, signInWithMagicLink } = useAuthContext()
+  const { signInWithEmail, signInWithMagicLink, role } = useAuthContext()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [magicLinkSent, setMagicLinkSent] = useState(false)
@@ -40,7 +40,7 @@ export function LoginPage() {
     const result = await signInWithEmail(data.email, data.password)
     setIsLoading(false)
     if (result.success) {
-      navigate('/')
+      navigate(role ? '/' : '/select-role')
     } else {
       const rawMsg = (result.error as { message?: string })?.message || ''
       let msg = 'Erro ao fazer login.'

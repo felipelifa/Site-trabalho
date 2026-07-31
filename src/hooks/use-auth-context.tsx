@@ -7,6 +7,8 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
   isAuthenticated: boolean
+  role: string | null
+  setRole: (role: string | null) => void
   signInWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: unknown; data?: unknown }>
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<{ success: boolean; error?: unknown; data?: unknown }>
   signInWithMagicLink: (email: string) => Promise<{ success: boolean; error?: unknown; data?: unknown }>
@@ -23,6 +25,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session: auth.session,
     loading: auth.loading,
     isAuthenticated: !!auth.user,
+    role: auth.role,
+    setRole: auth.setRole,
     signInWithEmail: auth.signInWithEmail,
     signUpWithEmail: auth.signUpWithEmail,
     signInWithMagicLink: auth.signInWithMagicLink,
