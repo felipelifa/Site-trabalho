@@ -53,10 +53,11 @@ export function EmployeeViewPage() {
 
   const myOperations = useMemo(() => {
     return operations.filter(op => {
-      const members = op.members as Array<{ employee: { id: string } }> | null
-      return members?.some(m => m.employee?.id === currentUserEmployee?.id)
+      const team = teams.find(t => t.id === op.team_id)
+      const teamMembers = (team?.members as Array<{ employee: { id: string } }>) || []
+      return teamMembers.some(m => m.employee?.id === currentUserEmployee?.id)
     })
-  }, [operations, currentUserEmployee])
+  }, [operations, teams, currentUserEmployee])
 
   const [workStarted, setWorkStarted] = useState(false)
   const [workEnded, setWorkEnded] = useState(false)

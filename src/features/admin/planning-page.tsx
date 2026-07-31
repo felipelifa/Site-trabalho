@@ -221,7 +221,8 @@ export function PlanningPage() {
       ) : (
         <motion.div variants={item} className="space-y-4">
           {operations.map((op) => {
-            const members = (op.members as Array<{ employee: { id: string; full_name: string; role: string } }>) || []
+            const team = teams.find(t => t.id === op.team_id)
+            const teamMembers = (team?.members as Array<{ employee: { id: string; full_name: string; role: string } }>) || []
             const leader = op.leader as { full_name: string } | null
             const vehicle = op.vehicle as { name: string; license_plate?: string } | null
 
@@ -299,11 +300,11 @@ export function PlanningPage() {
                       </div>
                     )}
 
-                    {members.length > 0 && (
+                    {teamMembers.length > 0 && (
                       <div className="pt-2 border-t border-border">
                         <p className="text-xs font-medium text-muted-foreground mb-2">Funcionários:</p>
                         <div className="flex flex-wrap gap-1.5">
-                          {members.map((m) => (
+                          {teamMembers.map((m) => (
                             <Badge key={m.employee.id} variant="secondary" className="text-xs">
                               {m.employee.full_name}
                             </Badge>
@@ -348,7 +349,7 @@ export function PlanningPage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-foreground">Equipe *</label>
-              <Select value={formData.team_id} onValueChange={(v) => setFormData({ ...formData, team_id: v })}>
+              <Select value={formData.team_id ?? ''} onValueChange={(v) => setFormData({ ...formData, team_id: v ?? '' })}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecionar equipe" />
                 </SelectTrigger>
@@ -399,7 +400,7 @@ export function PlanningPage() {
 
             <div>
               <label className="text-sm font-medium text-foreground">Responsável</label>
-              <Select value={formData.leader_id} onValueChange={(v) => setFormData({ ...formData, leader_id: v })}>
+              <Select value={formData.leader_id ?? ''} onValueChange={(v) => setFormData({ ...formData, leader_id: v ?? '' })}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecionar responsável" />
                 </SelectTrigger>
@@ -413,7 +414,7 @@ export function PlanningPage() {
 
             <div>
               <label className="text-sm font-medium text-foreground">Veículo</label>
-              <Select value={formData.vehicle_id} onValueChange={(v) => setFormData({ ...formData, vehicle_id: v })}>
+              <Select value={formData.vehicle_id ?? ''} onValueChange={(v) => setFormData({ ...formData, vehicle_id: v ?? '' })}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecionar veículo" />
                 </SelectTrigger>

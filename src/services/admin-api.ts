@@ -110,7 +110,7 @@ export const employeesService = {
     if (error) throw error
   },
 
-  async getByStatus(adminId: string, status: string) {
+  async getByStatus(adminId: string, status: 'active' | 'vacation' | 'away' | 'inactive') {
     const { data, error } = await supabase
       .from('employees')
       .select('*')
@@ -122,18 +122,20 @@ export const employeesService = {
   },
 
   async getWithoutTeam(adminId: string) {
+    const { data: teamMemberRows } = await supabase
+      .from('team_members')
+      .select('employee_id')
+    const memberIds = new Set((teamMemberRows || []).map(r => r.employee_id))
+
     const { data, error } = await supabase
       .from('employees')
       .select(`
         id, full_name, role, phone, city, status, photo_url
       `)
       .eq('admin_id', adminId)
-      .not('id', 'in', 
-        supabase.from('team_members').select('employee_id')
-      )
       .order('full_name', { ascending: true })
     if (error) throw error
-    return data
+    return (data || []).filter(e => !memberIds.has(e.id))
   },
 
   async searchByName(adminId: string, query: string) {
@@ -265,15 +267,12 @@ export const operationsService = {
         *,
         team:teams(id, name, color),
         leader:employees!operations_leader_id_fkey(id, full_name, photo_url),
-        vehicle:vehicles!operations_vehicle_id_fkey(id, name, license_plate),
-        members:team_members(
-          employee:employees(id, full_name, role, photo_url)
-        )
+        vehicle:vehicles!operations_vehicle_id_fkey(id, name, license_plate)
       `)
       .eq('admin_id', adminId)
       .eq('year', year)
       .eq('week_number', weekNumber)
-      .order('team:teams(name)', { ascending: true })
+      .order('team(name)', { ascending: true })
     if (error) throw error
     return data
   },
@@ -285,10 +284,7 @@ export const operationsService = {
         *,
         team:teams(id, name, color),
         leader:employees!operations_leader_id_fkey(id, full_name, photo_url),
-        vehicle:vehicles!operations_vehicle_id_fkey(id, name, license_plate),
-        members:team_members(
-          employee:employees(id, full_name, role, photo_url)
-        )
+        vehicle:vehicles!operations_vehicle_id_fkey(id, name, license_plate)
       `)
       .eq('admin_id', adminId)
       .order('year', { ascending: false })
@@ -375,10 +371,7 @@ export const operationsService = {
         *,
         team:teams(id, name, color),
         leader:employees!operations_leader_id_fkey(id, full_name, photo_url),
-        vehicle:vehicles!operations_vehicle_id_fkey(id, name, license_plate),
-        members:team_members(
-          employee:employees(id, full_name, role, photo_url)
-        )
+        vehicle:vehicles!operations_vehicle_id_fkey(id, name, license_plate)
       `)
       .eq('status', 'published')
       .in('team_id', teamIds)
@@ -495,6 +488,13 @@ export const employeeDailyRecordsService = {
   },
 
   async getByAdminAndDate(adminId: string, date: string) {
+    const { data: empRows } = await supabase
+      .from('employees')
+      .select('id')
+      .eq('admin_id', adminId)
+    const empIds = (empRows || []).map(e => e.id)
+    if (empIds.length === 0) return []
+
     const { data, error } = await supabase
       .from('employee_daily_records')
       .select(`
@@ -502,9 +502,7 @@ export const employeeDailyRecordsService = {
         employee:employees(id, full_name, role, photo_url, city, status)
       `)
       .eq('date', date)
-      .in('employee_id', 
-        supabase.from('employees').select('id').eq('admin_id', adminId)
-      )
+      .in('employee_id', empIds)
       .order('created_at', { ascending: false })
     if (error) throw error
     return data
@@ -517,7 +515,6 @@ export const employeeDailyRecordsService = {
 export const adminStatsService = {
   async getDashboardStats(adminId: string) {
     const now = new Date()
-    const currentMonth = now.getMonth() + 1
     const currentYear = now.getFullYear()
     const weekNumber = Math.ceil(((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / 86400000 + new Date(now.getFullYear(), 0, 1).getDay() + 1) / 7)
 
