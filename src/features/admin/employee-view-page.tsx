@@ -13,7 +13,7 @@ import {
   Plane,
   AlertTriangle,
 } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getISOWeek, startOfWeek, endOfWeek } from 'date-fns'
+import { format, eachDayOfInterval, getISOWeek, startOfWeek, endOfWeek } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -63,7 +63,7 @@ export function EmployeeViewPage() {
     const monthStart = new Date(selectedYear, selectedMonth - 1, 1)
     const monthEnd = new Date(selectedYear, selectedMonth, 0)
     const allDays = eachDayOfInterval({ start: monthStart, end: monthEnd })
-    const weekMap = new Map<number, WeekInfo>()
+    const weekMap = new Map()
 
     for (const day of allDays) {
       const weekNum = getISOWeek(day)
@@ -136,7 +136,6 @@ export function EmployeeViewPage() {
     const base = {
       employee_id: currentUserEmployee.id,
       date: dateStr,
-      operation_id: null as string | null,
     }
 
     switch (status) {
