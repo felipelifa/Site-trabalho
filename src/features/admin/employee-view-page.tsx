@@ -63,25 +63,25 @@ export function EmployeeViewPage() {
     const monthStart = new Date(selectedYear, selectedMonth - 1, 1)
     const monthEnd = new Date(selectedYear, selectedMonth, 0)
     const allDays = eachDayOfInterval({ start: monthStart, end: monthEnd })
-    const weekMap = new Map()
+    const weekObj: Record<number, WeekInfo> = {}
 
     for (const day of allDays) {
       const weekNum = getISOWeek(day)
-      if (!weekMap.has(weekNum)) {
+      if (!weekObj[weekNum]) {
         const weekStart = startOfWeek(day, { weekStartsOn: 1 })
         const weekEnd = endOfWeek(day, { weekStartsOn: 1 })
-        weekMap.set(weekNum, {
+        weekObj[weekNum] = {
           weekNumber: weekNum,
           year: weekStart.getFullYear(),
           days: [],
           start: weekStart,
           end: weekEnd,
-        })
+        }
       }
-      weekMap.get(weekNum)!.days.push(day)
+      weekObj[weekNum].days.push(day)
     }
 
-    return Array.from(weekMap.values())
+    return Object.values(weekObj)
   }, [selectedYear, selectedMonth])
 
   const myWeeks = useMemo(() => {
