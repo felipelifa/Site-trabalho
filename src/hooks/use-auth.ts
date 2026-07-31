@@ -25,7 +25,9 @@ export function useAuth() {
       .select('role')
       .eq('user_id', userId)
       .maybeSingle()
-    return data?.role || null
+    const role = data?.role
+    if (!role || role === 'user') return null
+    return role
   }, [])
 
   useEffect(() => {
