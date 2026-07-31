@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
@@ -18,8 +18,10 @@ import {
   Users,
   Users2,
   ClipboardList,
+  Repeat,
 } from 'lucide-react'
 import { useAuthContext } from '@/hooks/use-auth-context'
+import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -52,7 +54,8 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, isMobile, mobileOpen, onMobileClose }: SidebarProps) {
   const location = useLocation()
-  const { signOut, role } = useAuthContext()
+  const navigate = useNavigate()
+  const { signOut, role, setRole, user } = useAuthContext()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   const toggleTheme = () => {
@@ -205,6 +208,19 @@ export function Sidebar({ collapsed, onToggle, isMobile, mobileOpen, onMobileClo
       </nav>
 
       <div className="p-2 border-t border-border space-y-1">
+        <button
+          onClick={() => {
+            if (user) {
+              supabase.from('profiles').update({ role: null }).eq('user_id', user.id)
+            }
+            setRole(null)
+            navigate('/select-role', { replace: true })
+          }}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 w-full"
+        >
+          <Repeat className="w-5 h-5" />
+          {!collapsed && <span className="text-sm font-medium">Trocar Conta</span>}
+        </button>
         <button
           onClick={toggleTheme}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 w-full"

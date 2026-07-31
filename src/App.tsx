@@ -66,7 +66,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/select-role" replace />
   }
 
   return <>{children}</>

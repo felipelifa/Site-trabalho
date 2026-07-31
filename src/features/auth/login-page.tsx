@@ -40,7 +40,7 @@ export function LoginPage() {
     const result = await signInWithEmail(data.email, data.password)
     setIsLoading(false)
     if (result.success) {
-      navigate('/', { replace: true })
+      navigate('/select-role', { replace: true })
     } else {
       const rawMsg = (result.error as { message?: string })?.message || ''
       let msg = 'Erro ao fazer login.'
