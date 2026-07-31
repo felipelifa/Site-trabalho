@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, Outlet } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuthContext } from '@/hooks/use-auth-context'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -72,7 +72,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function AdminRoute({ children }: { children: React.ReactNode }) {
+function AdminRoute() {
   const { role, loading } = useAuthContext()
 
   if (loading) {
@@ -83,7 +83,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/" replace />
   }
 
-  return <>{children}</>
+  return <Outlet />
 }
 
 function AppRoutes() {
@@ -133,11 +133,7 @@ function AppRoutes() {
           <Route path="checklists" element={<ChecklistsPage />} />
           <Route path="reminders" element={<RemindersPage />} />
           <Route path="my-work" element={<EmployeeViewPage />} />
-          <Route path="admin" element={
-            <AdminRoute>
-              <AppLayout />
-            </AdminRoute>
-          }>
+          <Route path="admin" element={<AdminRoute />}>
             <Route index element={<AdminDashboardPage />} />
             <Route path="employees" element={<EmployeesPage />} />
             <Route path="teams" element={<TeamsPage />} />
